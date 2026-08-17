@@ -1,0 +1,219 @@
+---
+import Aside from "@/components/mdx/Aside.astro";
+import Callout from "@/components/mdx/Callout.astro";
+import CodeEnhancer from "@/components/mdx/CodeEnhancer.astro";
+import CoverImage from "@/components/post/CoverImage.astro";
+import Details from "@/components/mdx/Details.astro";
+import Figure from "@/components/mdx/Figure.astro";
+import LocaleSwitch from "@/components/post/LocaleSwitch.astro";
+import RelatedPosts from "@/components/post/RelatedPosts.astro";
+import TableOfContents from "@/components/post/TableOfContents.astro";
+import TraceRail from "@/components/post/TraceRail.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  getAllFullPosts,
+  getAvailableLocales,
+  getRelatedPosts,
+  renderPost,
+  type Locale,
+} from "@/lib/content";
+import { getMessages, localeHref } from "@/lib/i18n";
+import { buildPostHreflang } from "@/lib/seo/hreflang";
+import {
+  blogPostingJsonLd,
+  breadcrumbJsonLd,
+  serializeJsonLd,
+} from "@/lib/seo/json-ld";
+import { absoluteUrl, ogImageUrl, postMarkdownUrl, postUrl } from "@/lib/seo/site";
+
+export async function getStaticPaths() {
+  const posts = await getAllFullPosts();
+
+  return posts.map((post) => ({
+    params: { locale: post.locale, slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const locale = post.locale as Locale;
+const m = getMessages(locale);
+
+const { Content } = await renderPost(post);
+
+const [available, related, languages] = await Promise.all([
+  getAvailableLocales(post.slug),
+  getRelatedPosts(post),
+  buildPostHreflang(post.slug),
+]);
+
+const canonical = post.canonical ?? postUrl(locale, post.slug);
+const ogImage = ogImageUrl(locale, post.slug);
+
+const jsonLd = serializeJsonLd([
+  blogPostingJsonLd(post, ogImage),
+  breadcrumbJsonLd([
+    { name: m.nav.home, url: absoluteUrl(`/${locale}`) },
+    { name: m.nav.posts, url: absoluteUrl(`/${locale}/posts`) },
+    { name: post.title, url: postUrl(locale, post.slug) },
+  ]),
+]);
+
+const components = { Callout, Figure, Aside, Details };
+---
+
+<BaseLayout
+  locale={locale}
+  title={post.title}
+  description={post.description}
+  canonical={canonical}
+  languages={languages}
+  ogType="article"
+  ogImage={ogImage}
+  publishedTime={post.date}
+  modifiedTime={post.updated ?? post.date}
+  markdownUrl={postMarkdownUrl(locale, post.slug)}
+  jsonLd={jsonLd}
+>
+  <article class="article" data-category={post.category}>
+    <header class="header">
+      {post.category && <p class="eyebrow category">{m.category[post.category]}</p>}
+      <h1 class="post-title title reveal">{post.title}</h1>
+      <LocaleSwitch locale={locale} slug={post.slug} available={available} />
+    </header>
+
+    <div class="grid">
+      <div class="rail-column">
+        <TraceRail post={post} locale={locale} />
+      </div>
+
+      <div class="content">
+        {/* 리드 이미지 — 제목 아래, Answer Block 위 (docs/DESIGN.md §1) */}
+        {post.cover && <CoverImage cover={post.cover} priority />}
+
+        {/* ★ 시그니처: 해답 블록 (docs/DESIGN.md §2) */}
+        {post.summary && <p class="answer-block reveal-delayed">{post.summary}</p>}
+
+        <div class="prose">
+          <Content components={components} />
+        </div>
+
+        <footer class="footer">
+          <a href={localeHref(locale, "/posts")} class="back-link">
+            ← {m.post.backToList}
+          </a>
+          {/* AI 크롤러·독자 모두를 위한 원문 마크다운 링크 */}
+          <a href={postMarkdownUrl(locale, post.slug)} class="source-link">
+            {m.footer.sourceNote}
+          </a>
+        </footer>
+
+        <RelatedPosts posts={related} locale={locale} />
+      </div>
+
+      <div class="toc-column">
+        <TableOfContents headings={post.headings} locale={locale} />
+      </div>
+    </div>
+  </article>
+
+  <CodeEnhancer copyLabel={m.post.copyCode} copiedLabel={m.post.copied} />
+</BaseLayout>
+
+<style>
+  .article {
+    max-width: 74rem;
+    margin-inline: auto;
+    padding: clamp(2.5rem, 1.5rem + 5vw, 5rem) var(--space-page) 0;
+  }
+
+  .header {
+    margin-block-end: clamp(2rem, 1rem + 4vw, 3.5rem);
+  }
+
+  .category {
+    margin: 0 0 0.9rem;
+  }
+
+  .title {
+    margin: 0;
+  }
+
+  /*
+   * 에디토리얼 3단 그리드: 트레이스 레일 | 본문 | 목차
+   * 본문 폭(measure)은 고정이다 — 넓은 화면에서 늘어나는 것은 여백이지 본문이 아니다.
+   */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .rail-column,
+  .toc-column,
+  .content {
+    min-width: 0;
+  }
+
+  .prose {
+    margin-block-start: var(--space-block);
+  }
+
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-block-start: var(--space-section);
+    padding-block-start: 1.25rem;
+    border-block-start: 1px solid var(--color-rule);
+    max-width: var(--measure);
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+  }
+
+  .back-link,
+  .source-link {
+    color: var(--color-ink-muted);
+    text-decoration: none;
+    transition: color var(--duration-fast) ease;
+  }
+
+  .source-link {
+    color: var(--color-ink-faint);
+  }
+
+  .back-link:hover,
+  .source-link:hover {
+    color: var(--color-signal-resolved);
+  }
+
+  /* 목차는 화면이 충분히 넓을 때만 별도 컬럼으로 나온다. */
+  .toc-column {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .grid {
+      grid-template-columns: minmax(7rem, var(--space-rail)) minmax(0, 1fr);
+      gap: 2.5rem;
+    }
+
+    .header {
+      margin-inline-start: calc(var(--space-rail) + 2.5rem);
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .grid {
+      grid-template-columns: minmax(7rem, var(--space-rail)) minmax(0, 1fr) 13rem;
+      gap: 3rem;
+    }
+
+    .toc-column {
+      display: block;
+    }
+  }
+</style>

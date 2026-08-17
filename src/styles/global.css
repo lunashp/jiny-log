@@ -1,0 +1,107 @@
+@import "tailwindcss";
+@import "./fonts.css";
+@import "./tokens.css";
+@import "./typography.css";
+@import "./code.css";
+
+/* ---- 리셋 ---- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-block-start: 5rem;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  min-height: 100dvh;
+}
+
+img,
+picture,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--color-selection);
+}
+
+/* ---- 포커스 ---- */
+
+/*
+ * 키보드로 전 페이지를 돌 수 있어야 한다. 이 아웃라인을 제거하지 않는다.
+ */
+:focus-visible {
+  outline: 2px solid var(--color-signal-resolved);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- 본문 건너뛰기 ---- */
+
+.skip-link {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  transform: translateY(-120%);
+  background: var(--color-ink);
+  color: var(--color-ground);
+  padding: 0.6rem 1rem;
+  z-index: 100;
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+/* ---- 진입 모션 ---- */
+
+/*
+ * 페이지 진입 시 제목 + 해답 블록에 한 번의 짧은 페이드업. 그 이상 없다.
+ * 이 사이트의 목적은 답을 빨리 주는 것이지 인상을 남기는 게 아니다.
+ */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reveal {
+  animation: reveal var(--duration-reveal) var(--ease-out-expo) both;
+}
+
+.reveal-delayed {
+  animation: reveal var(--duration-reveal) var(--ease-out-expo) 80ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

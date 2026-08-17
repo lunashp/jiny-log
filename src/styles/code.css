@@ -1,0 +1,127 @@
+/*
+ * 코드블록 — 본문에서 가장 자주 등장하는 요소다.
+ *
+ * 하이라이팅은 빌드 타임 Shiki 가 끝냈다. 런타임 하이라이터가 클라이언트에
+ * 가지 않는다는 것이 번들 예산의 핵심이다.
+ */
+
+.prose pre.astro-code {
+  margin: 0;
+  padding: 1rem 0.95rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  tab-size: 2;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  /* Shiki 테마의 배경 대신 우리 토큰을 쓴다 — 그대로 두면 지면과 어긋난다. */
+  background: var(--color-surface-sunken) !important;
+}
+
+.prose pre.astro-code code {
+  display: block;
+  width: fit-content;
+  min-width: 100%;
+}
+
+/* 스크립트가 pre 를 감싸 복사 버튼을 붙인다 */
+.code-scroller {
+  position: relative;
+  margin-block: var(--space-block);
+}
+
+.code-copy {
+  position: absolute;
+  inset-block-start: 0.5rem;
+  inset-inline-end: 0.5rem;
+  appearance: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  line-height: 1;
+  padding: 0.35rem 0.45rem;
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+/* hover 뿐 아니라 키보드 포커스에서도 나타나야 한다. */
+.code-scroller:hover .code-copy,
+.code-copy:focus-visible,
+.code-copy[data-copied] {
+  opacity: 1;
+}
+
+.code-copy:hover {
+  color: var(--color-ink);
+}
+
+.code-copy:active {
+  transform: scale(0.94);
+}
+
+.code-copy[data-copied] {
+  color: var(--color-signal-resolved);
+  border-color: currentColor;
+}
+
+/* 터치 기기에는 hover 가 없으므로 항상 보인다. */
+@media (hover: none) {
+  .code-copy {
+    opacity: 1;
+  }
+}
+
+/*
+ * Shiki 듀얼 테마 전환.
+ * 각 토큰에 --shiki-light / --shiki-dark 변수가 심겨 있다.
+ * CSS만으로 전환하므로 런타임 JS가 없다.
+ */
+.astro-code,
+.astro-code span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+  text-decoration: var(--shiki-light-text-decoration);
+}
+
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    .astro-code,
+    .astro-code span {
+      color: var(--shiki-dark);
+      font-style: var(--shiki-dark-font-style);
+      font-weight: var(--shiki-dark-font-weight);
+      text-decoration: var(--shiki-dark-text-decoration);
+    }
+  }
+}
+
+:root[data-theme="dark"] .astro-code,
+:root[data-theme="dark"] .astro-code span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
+}
+
+/* diff 표기 — 색 의미 체계가 코드블록 안에서도 일관되게 유지된다. */
+.astro-code .diff.add {
+  background: var(--color-signal-resolved-tint);
+}
+
+.astro-code .diff.remove {
+  background: var(--color-signal-problem-tint);
+}
+
+.astro-code .highlighted {
+  background: var(--color-signal-note-tint);
+  display: inline-block;
+  width: 100%;
+}

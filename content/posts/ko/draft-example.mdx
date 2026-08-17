@@ -1,0 +1,23 @@
+---
+title: "초안 상태 확인용 글"
+description: "이 글은 draft: true 이므로 프로덕션 빌드에서 목록·사이트맵·RSS·llms.txt 어디에도 나타나지 않아야 한다. 개발 서버에서만 보인다."
+date: "2026-08-17"
+draft: true
+tags: ["meta"]
+category: "note"
+---
+
+## 이 글의 목적
+
+`draft: true` 필터링이 실제로 동작하는지 확인하기 위한 글이다.
+
+프로덕션 빌드(`pnpm build`)에서는 이 글의 라우트 자체가 생성되지 않아야 하고, 개발 서버(`pnpm dev`)에서는 보여야 한다.
+
+## 확인 방법
+
+```bash
+pnpm build
+# 출력된 라우트 목록에 /ko/posts/draft-example 이 없어야 한다
+```
+
+유닛 테스트로도 고정되어 있다 (`src/lib/content/queries.test.ts`).

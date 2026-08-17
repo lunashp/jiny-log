@@ -1,0 +1,249 @@
+---
+import {
+  LOCALES,
+  getAvailableLocales,
+  type Locale,
+  type PostSummary,
+} from "@/lib/content";
+import { getMessages, localeHref } from "@/lib/i18n";
+
+interface Props {
+  locale: Locale;
+  posts: PostSummary[];
+}
+
+const { locale, posts } = Astro.props;
+const m = getMessages(locale);
+
+/** 연도별 그룹. 데이트라인 리스트에서 연도는 그룹 헤더로 한 번만 나온다. */
+function groupByYear(items: PostSummary[]): Array<[string, PostSummary[]]> {
+  const groups = new Map<string, PostSummary[]>();
+  for (const post of items) {
+    const year = post.date.slice(0, 4);
+    const bucket = groups.get(year);
+    if (bucket) bucket.push(post);
+    else groups.set(year, [post]);
+  }
+  return [...groups.entries()];
+}
+
+const groups = groupByYear(posts);
+
+// 번역 존재 여부를 미리 해결해 둔다 (템플릿에서 await 를 반복하지 않도록).
+const availability = new Map<string, Locale[]>();
+for (const post of posts) {
+  availability.set(post.slug, await getAvailableLocales(post.slug));
+}
+---
+
+{
+  posts.length === 0 ? (
+    <p class="empty">{m.list.empty}</p>
+  ) : (
+    <div class="wrap">
+      {groups.map(([year, yearPosts]) => (
+        <section class="year-group" aria-labelledby={`year-${year}`}>
+          <h2 id={`year-${year}`} class="year">
+            {year}
+          </h2>
+
+          <ul class="list">
+            {yearPosts.map((post) => (
+              <li class="item" data-category={post.category}>
+                <a href={localeHref(locale, `/posts/${post.slug}`)} class="link">
+                  <time class="date" datetime={post.date}>
+                    {post.date.slice(5).replace("-", ".")}
+                  </time>
+
+                  <div class="body">
+                    <div class="topline">
+                      {post.category && (
+                        <span class="eyebrow">{m.category[post.category]}</span>
+                      )}
+                      {post.draft && <span class="draft">{m.post.draftBadge}</span>}
+                    </div>
+
+                    <h3 class="title">{post.title}</h3>
+                    <p class="description">{post.description}</p>
+
+                    {post.tags.length > 0 && (
+                      <p class="tags">
+                        {post.tags.map((tag) => (
+                          <span>#{tag}</span>
+                        ))}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* 번역 존재 여부. 없는 언어는 취소선으로 구분한다 (대비 기준). */}
+                  <span class="locales" aria-hidden="true">
+                    {LOCALES.map((l) => (
+                      <span data-has={availability.get(post.slug)?.includes(l)}>
+                        {l}
+                      </span>
+                    ))}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  )
+}
+
+<style>
+  .wrap {
+    max-width: 58rem;
+  }
+
+  .empty {
+    color: var(--color-ink-muted);
+    font-size: var(--text-lede);
+  }
+
+  .year-group + .year-group {
+    margin-block-start: var(--space-section);
+  }
+
+  .year {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    color: var(--color-ink-faint);
+    margin: 0 0 0.5rem;
+    padding-block-end: 0.5rem;
+    border-block-end: 1px solid var(--color-rule-strong);
+  }
+
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .item {
+    border-block-end: 1px solid var(--color-rule);
+  }
+
+  /* 행 전체가 클릭 대상. 카드도 그림자도 없다 — 괘선 하나로 구분한다. */
+  .link {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr auto;
+    gap: 0 1.5rem;
+    align-items: start;
+    padding: 1.5rem 0.75rem 1.5rem 0;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color var(--duration-fast) ease;
+  }
+
+  .link:hover {
+    background: var(--color-surface);
+  }
+
+  .date {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-ink-faint);
+    font-variant-numeric: tabular-nums;
+    padding-block-start: 0.3rem;
+  }
+
+  .body {
+    min-width: 0;
+  }
+
+  .topline {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-block-end: 0.4rem;
+  }
+
+  .draft {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-signal-note);
+    border: 1px solid currentColor;
+    border-radius: var(--radius-sm);
+    padding: 0 0.35em;
+  }
+
+  .title {
+    margin: 0;
+    font-size: var(--text-h3);
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    transition: color var(--duration-fast) ease;
+  }
+
+  .link:hover .title {
+    color: var(--color-signal-resolved);
+  }
+
+  .description {
+    margin: 0.5rem 0 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--color-ink-muted);
+    max-width: 52ch;
+    text-wrap: pretty;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0.7rem 0 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-ink-faint);
+  }
+
+  .locales {
+    display: flex;
+    gap: 0.35rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.06em;
+    padding-block-start: 0.3rem;
+    color: var(--color-ink-faint);
+  }
+
+  /*
+   * 번역 유무는 정보다 — opacity 로 흐리게 하면 대비가 1.46 까지 떨어져
+   * AA 를 못 넘긴다. 색이 아니라 취소선으로 구분한다.
+   */
+  .locales span[data-has="false"] {
+    color: var(--color-ink-faint);
+    text-decoration: line-through;
+  }
+
+  .locales span[data-has="true"] {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  @media (max-width: 640px) {
+    .link {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      padding-inline-end: 0;
+    }
+
+    .date {
+      padding-block-start: 0;
+    }
+
+    .locales {
+      padding-block-start: 0.5rem;
+    }
+  }
+</style>

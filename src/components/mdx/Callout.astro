@@ -1,0 +1,47 @@
+---
+/**
+ * 주의/경고 박스.
+ * ★ 핵심 정보를 여기 넣지 않는다 — 본문에서 잘려 인용될 수 있다.
+ */
+interface Props {
+  type?: "info" | "warn" | "danger";
+}
+
+const { type = "info" } = Astro.props;
+---
+
+<aside class="callout" data-type={type}><slot /></aside>
+
+<style>
+  .callout {
+    margin-block: var(--space-block);
+    padding: 0.9rem 1.1rem;
+    border-inline-start: 3px solid var(--accent);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    background: var(--tint);
+    font-size: 0.9375rem;
+  }
+
+  .callout > :global(:first-child) {
+    margin-block-start: 0;
+  }
+
+  .callout > :global(:last-child) {
+    margin-block-end: 0;
+  }
+
+  .callout[data-type="info"] {
+    --accent: var(--color-signal-resolved);
+    --tint: var(--color-signal-resolved-tint);
+  }
+
+  .callout[data-type="warn"] {
+    --accent: var(--color-signal-note);
+    --tint: var(--color-signal-note-tint);
+  }
+
+  .callout[data-type="danger"] {
+    --accent: var(--color-signal-problem);
+    --tint: var(--color-signal-problem-tint);
+  }
+</style>

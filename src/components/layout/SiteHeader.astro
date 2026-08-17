@@ -1,0 +1,79 @@
+---
+import ThemeToggle from "@/components/layout/ThemeToggle.astro";
+import type { Locale } from "@/lib/content";
+import { getMessages, localeHref } from "@/lib/i18n";
+import { SITE_NAME } from "@/lib/seo/site";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const m = getMessages(locale);
+---
+
+<header class="header">
+  <div class="inner">
+    <a href={localeHref(locale, "/")} class="wordmark">{SITE_NAME[locale]}</a>
+
+    <nav aria-label={m.nav.mainLabel} class="nav">
+      <a href={localeHref(locale, "/posts")} class="link">{m.nav.posts}</a>
+      <ThemeToggle label={m.nav.mainLabel} />
+    </nav>
+  </div>
+</header>
+
+<style>
+  .header {
+    border-block-end: 1px solid var(--color-rule);
+    background: color-mix(in oklch, var(--color-ground) 88%, transparent);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 20;
+  }
+
+  .inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    max-width: 74rem;
+    margin-inline: auto;
+    padding: 0.85rem var(--space-page);
+  }
+
+  .wordmark {
+    font-family: var(--font-mono);
+    font-size: var(--text-caption);
+    letter-spacing: 0.06em;
+    text-transform: lowercase;
+    color: var(--color-ink);
+    text-decoration: none;
+    transition: opacity var(--duration-fast) ease;
+  }
+
+  .wordmark:hover {
+    opacity: 0.6;
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .link {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+    text-decoration: none;
+    transition: color var(--duration-fast) ease;
+  }
+
+  .link:hover {
+    color: var(--color-ink);
+  }
+</style>

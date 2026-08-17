@@ -1,0 +1,50 @@
+---
+import PostList from "@/components/post/PostList.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { LOCALES, getAllTags, getPostsByTag, type Locale } from "@/lib/content";
+import { getMessages, interpolate } from "@/lib/i18n";
+import { absoluteUrl } from "@/lib/seo/site";
+
+export async function getStaticPaths() {
+  const paths = [];
+
+  for (const locale of LOCALES) {
+    for (const { tag } of await getAllTags(locale)) {
+      paths.push({ params: { locale, tag }, props: { tag } });
+    }
+  }
+
+  return paths;
+}
+
+const locale = Astro.params.locale as Locale;
+const { tag } = Astro.props;
+const m = getMessages(locale);
+const posts = await getPostsByTag(locale, tag);
+const title = interpolate(m.list.tagTitle, { tag });
+---
+
+<BaseLayout
+  locale={locale}
+  title={title}
+  description={m.site.description}
+  canonical={absoluteUrl(`/${locale}/tags/${tag}`)}
+  noindex
+>
+  <div class="page">
+    <h1 class="post-title title reveal">{title}</h1>
+    <PostList locale={locale} posts={posts} />
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    max-width: 74rem;
+    margin-inline: auto;
+    padding: clamp(2.5rem, 1.5rem + 5vw, 5rem) var(--space-page) 0;
+  }
+
+  .title {
+    margin: 0 0 clamp(2rem, 1rem + 4vw, 3.5rem);
+  }
+</style>

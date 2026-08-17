@@ -1,0 +1,88 @@
+---
+title: "pnpm에서 ERR_MODULE_NOT_FOUND가 뜰 때: strict 격리와 peer dependency"
+description: "npm에서는 되던 코드가 pnpm에서만 모듈을 못 찾는 이유를 node_modules 구조 차이로 설명하고, 올바른 해결책과 피해야 할 우회책을 구분한다."
+summary: "pnpm은 선언하지 않은 패키지를 import할 수 없게 막는다. npm의 평탄한 node_modules에서는 우연히 접근되던 전이 의존성이 pnpm에서는 보이지 않기 때문이다. 해결책은 해당 패키지를 package.json에 직접 선언하는 것이고, shamefully-hoist는 문제를 덮을 뿐이다."
+date: "2026-07-02"
+draft: false
+tags: ["pnpm", "nodejs", "dependencies"]
+category: "insight"
+---
+
+## 무엇을 알게 됐나
+
+**pnpm에서만 나는 `ERR_MODULE_NOT_FOUND` 는 대부분 버그가 아니라 설계 의도다.** 내 `package.json` 에 선언하지 않은 패키지를 import하고 있다는 뜻이고, npm에서 되던 것이 오히려 우연이었다.
+
+## 어떤 상황이었나
+
+npm에서 잘 돌던 프로젝트를 pnpm으로 옮기자 이런 에러가 났다.
+
+```text
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'zod' imported from
+/project/node_modules/.pnpm/some-lib@1.0.0/node_modules/some-lib/dist/index.js
+```
+
+`zod` 는 분명히 설치돼 있었다. `node_modules/zod` 도 존재했다.
+
+## 왜 그런가
+
+두 패키지 매니저의 `node_modules` 구조가 다르다.
+
+**npm은 의존성을 평탄화한다.** `some-lib` 이 `zod` 를 의존하면 `zod` 가 최상위로 끌어올려진다.
+
+```text
+node_modules/
+├── some-lib/
+└── zod/          ← 끌어올려짐. 아무나 import 가능
+```
+
+이 구조에서는 내가 `zod` 를 선언하지 않아도 `import "zod"` 가 동작한다. Node의 해석 알고리즘이 상위 디렉터리를 훑기 때문이다.
+
+**pnpm은 심링크로 격리한다.** 각 패키지는 자기가 선언한 의존성만 볼 수 있다.
+
+```text
+node_modules/
+├── some-lib -> .pnpm/some-lib@1.0.0/node_modules/some-lib
+└── .pnpm/
+    ├── some-lib@1.0.0/node_modules/
+    │   ├── some-lib/
+    │   └── zod -> ../../zod@3.25.76/node_modules/zod
+    └── zod@3.25.76/node_modules/zod/
+```
+
+최상위에 `zod` 심링크가 없으면 내 코드는 `zod` 를 볼 수 없다. **선언하지 않았으니 접근할 수 없다** — 이것이 격리의 정의다.
+
+## 해결
+
+선언하면 된다.
+
+```bash
+pnpm add zod
+```
+
+에러 메시지가 라이브러리 내부 경로를 가리킨다면 그 라이브러리가 peer dependency를 제대로 선언하지 않은 것이므로, 소비자인 내가 직접 설치해 주면 해결된다.
+
+## 하지 말아야 할 우회
+
+```ini
+# .npmrc
+shamefully-hoist=true
+```
+
+이름 그대로다. npm의 평탄한 구조를 흉내 내 에러를 없애지만, **선언하지 않은 패키지에 의존하는 상태가 그대로 남는다.** 그 전이 의존성이 다음 마이너 업데이트에서 빠지면 그때 다시 깨지고, 그때는 원인이 훨씬 멀어져 있다.
+
+## 언제 적용되고 언제 안 되나
+
+- **적용됨:** 애플리케이션 코드에서 나는 `ERR_MODULE_NOT_FOUND`. 거의 항상 선언 누락이다.
+- **적용 안 됨:** 라이브러리가 자기 `dependencies` 를 잘못 선언해 자기 자신을 못 찾는 경우. 이건 업스트림 버그이고, 임시로 `pnpm.overrides` 나 `packageExtensions` 로 메울 수 있다.
+- 번들러(Vite, webpack)를 거치는 코드는 해석 규칙이 달라 증상이 다르게 나타날 수 있다. 이 글은 Node 런타임의 ESM 해석 기준이다.
+
+## 정리
+
+| 상황 | 조치 |
+| --- | --- |
+| 내 코드가 import하는데 미선언 | `pnpm add <pkg>` |
+| 라이브러리가 peer를 미선언 | 소비자가 직접 설치 |
+| 라이브러리 자체 버그 | `pnpm.overrides` / `packageExtensions` |
+| 원인 파악이 귀찮음 | `shamefully-hoist` — **권하지 않는다** |
+
+확인 환경: pnpm 10.20.0, Node 24.11.0 (2026-07-02).

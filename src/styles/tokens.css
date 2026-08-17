@@ -1,0 +1,142 @@
+/*
+ * 디자인 토큰 — docs/DESIGN.md
+ *
+ * 규칙: 컴포넌트에 팔레트 값이나 매직 넘버를 직접 박지 않는다.
+ *      새 값이 필요하면 여기에 토큰을 추가한다.
+ *
+ * ★ 색은 의미를 가진다. signal-problem 은 에러·문제 맥락에서만 쓴다.
+ *   그냥 강조하고 싶어서 빨강을 쓰면 체계가 죽고 장식이 된다.
+ *
+ * ★ 명도 값은 눈대중이 아니라 WCAG 대비 계산으로 정했다.
+ *   ink-faint 와 signal-* 는 12–13px 메타 텍스트에 쓰이므로 AA 4.5:1 이 필요하다.
+ *   초기 값(ink-faint 68%)은 2.77:1 로 미달이었고 axe 가 잡아냈다.
+ *   값을 바꾸면 `pnpm test:e2e` 의 a11y 스펙이 다시 검증한다.
+ */
+
+:root {
+  /* ---- 지면 ---- */
+  --color-ground: oklch(98.6% 0.002 240); /* 미세하게 차가운 흰색 — 크림색 아님 */
+  --color-surface: oklch(100% 0 0);
+  --color-surface-sunken: oklch(96.5% 0.003 240);
+  --color-ink: oklch(21% 0.014 250); /* 순검정 아닌 청흑 */
+  --color-ink-muted: oklch(52% 0.012 250);
+  --color-ink-faint: oklch(55% 0.012 250); /* 4.56:1 — 12px 텍스트에 쓰이므로 AA 필수 */
+  --color-rule: oklch(90% 0.006 250);
+  --color-rule-strong: oklch(82% 0.008 250);
+
+  /* ---- 시그널 (의미론적) ---- */
+  --color-signal-problem: oklch(55% 0.19 27); /* 문제·에러 */
+  --color-signal-resolved: oklch(53% 0.11 195); /* 해결·링크 — 4.67:1 */
+  --color-signal-note: oklch(56% 0.13 75); /* 주의·보류 — 4.56:1 */
+
+  --color-signal-problem-tint: oklch(55% 0.19 27 / 0.07);
+  --color-signal-resolved-tint: oklch(53% 0.11 195 / 0.07);
+  --color-signal-note-tint: oklch(56% 0.13 75 / 0.09);
+
+  /* ---- 선택 영역 ---- */
+  --color-selection: oklch(53% 0.11 195 / 0.18);
+
+  /* ---- 서체 ----
+   * 각 스택의 2번째가 메트릭 보정된 폴백이다 (fonts.css).
+   * 폰트 로드 전에도 줄바꿈이 같아 스왑 시 CLS 가 없다.
+   */
+  --font-sans:
+    "Pretendard Variable", "Pretendard Fallback", -apple-system,
+    BlinkMacSystemFont, system-ui, sans-serif;
+  --font-serif: "Gowun Batang", "Gowun Batang Fallback", var(--font-sans);
+  --font-mono:
+    "JetBrains Mono", "JetBrains Mono Fallback", ui-monospace, SFMono-Regular,
+    Menlo, monospace;
+
+  /* ---- 타입 스케일 ---- */
+  --text-meta: 0.75rem;
+  --text-caption: 0.8125rem;
+  --text-body: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+  --text-lede: clamp(1.125rem, 1.05rem + 0.35vw, 1.3125rem);
+  --text-h3: clamp(1.125rem, 1.05rem + 0.35vw, 1.3125rem);
+  --text-h2: clamp(1.375rem, 1.2rem + 0.7vw, 1.75rem);
+  --text-title: clamp(2rem, 1.3rem + 3.2vw, 4rem);
+  --text-display: clamp(2.5rem, 1.2rem + 5.5vw, 6rem);
+
+  /* ---- 간격 ---- */
+  --space-rail: clamp(0px, -4rem + 10vw, 8.5rem);
+  --space-flow: 1.5rem;
+  --space-section: 3.5rem;
+  --space-block: 2rem;
+  --space-page: clamp(1.25rem, 0.6rem + 3vw, 3rem);
+
+  /* ---- 본문 폭 (measure) ---- */
+  --measure-ko: 33rem;
+  --measure-en: 36rem;
+
+  /* ---- 모션 ---- */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-reveal: 400ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+}
+
+/*
+ * 다크 — 라이트의 색 반전이 아니다. 채도와 명도를 각각 다시 잡았다.
+ * 배경은 순검정이 아닌 깊은 청흑이라 코드블록이 지면 위에 뜬다.
+ */
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --color-ground: oklch(17% 0.014 250);
+    --color-surface: oklch(21% 0.016 250);
+    --color-surface-sunken: oklch(14.5% 0.012 250);
+    --color-ink: oklch(93% 0.006 250);
+    --color-ink-muted: oklch(68% 0.012 250);
+    --color-ink-faint: oklch(59% 0.012 250); /* 4.56:1 */
+    --color-rule: oklch(31% 0.012 250);
+    --color-rule-strong: oklch(40% 0.014 250);
+
+    --color-signal-problem: oklch(70% 0.16 27);
+    --color-signal-resolved: oklch(74% 0.11 195);
+    --color-signal-note: oklch(78% 0.12 75);
+
+    --color-signal-problem-tint: oklch(70% 0.16 27 / 0.12);
+    --color-signal-resolved-tint: oklch(74% 0.11 195 / 0.12);
+    --color-signal-note-tint: oklch(78% 0.12 75 / 0.14);
+
+    --color-selection: oklch(74% 0.11 195 / 0.25);
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-ground: oklch(17% 0.014 250);
+  --color-surface: oklch(21% 0.016 250);
+  --color-surface-sunken: oklch(14.5% 0.012 250);
+  --color-ink: oklch(93% 0.006 250);
+  --color-ink-muted: oklch(68% 0.012 250);
+  --color-ink-faint: oklch(59% 0.012 250); /* 4.56:1 */
+  --color-rule: oklch(31% 0.012 250);
+  --color-rule-strong: oklch(40% 0.014 250);
+
+  --color-signal-problem: oklch(70% 0.16 27);
+  --color-signal-resolved: oklch(74% 0.11 195);
+  --color-signal-note: oklch(78% 0.12 75);
+
+  --color-signal-problem-tint: oklch(70% 0.16 27 / 0.12);
+  --color-signal-resolved-tint: oklch(74% 0.11 195 / 0.12);
+  --color-signal-note-tint: oklch(78% 0.12 75 / 0.14);
+
+  --color-selection: oklch(74% 0.11 195 / 0.25);
+}
+
+/* 카테고리 → 시그널 색 매핑 (docs/DESIGN.md §3) */
+[data-category="troubleshooting"] {
+  --category-color: var(--color-signal-problem);
+}
+[data-category="insight"] {
+  --category-color: var(--color-signal-resolved);
+}
+[data-category="note"] {
+  --category-color: var(--color-ink-muted);
+}
+[data-category="retrospective"] {
+  --category-color: var(--color-signal-note);
+}

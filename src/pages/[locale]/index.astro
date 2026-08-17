@@ -1,0 +1,59 @@
+---
+import PostList from "@/components/post/PostList.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { LOCALES, getPosts, type Locale } from "@/lib/content";
+import { getMessages } from "@/lib/i18n";
+import { buildStaticHreflang } from "@/lib/seo/hreflang";
+import { absoluteUrl } from "@/lib/seo/site";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const m = getMessages(locale);
+const posts = await getPosts(locale);
+---
+
+<BaseLayout
+  locale={locale}
+  title={m.site.title}
+  description={m.site.description}
+  canonical={absoluteUrl(`/${locale}`)}
+  languages={buildStaticHreflang("", LOCALES)}
+>
+  <div class="page">
+    <section class="intro" aria-labelledby="intro-heading">
+      <h1 id="intro-heading" class="display-title title reveal">{m.site.tagline}</h1>
+      <p class="lede reveal-delayed">{m.site.description}</p>
+    </section>
+
+    <PostList locale={locale} posts={posts} />
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    max-width: 74rem;
+    margin-inline: auto;
+    padding: clamp(3rem, 2rem + 6vw, 7rem) var(--space-page) 0;
+  }
+
+  .intro {
+    margin-block-end: clamp(3.5rem, 2rem + 7vw, 8rem);
+  }
+
+  .title {
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin-block-start: 1.75rem;
+    max-width: 42ch;
+    font-size: var(--text-lede);
+    line-height: 1.6;
+    color: var(--color-ink-muted);
+    text-wrap: pretty;
+  }
+</style>

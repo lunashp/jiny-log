@@ -1,0 +1,61 @@
+---
+/**
+ * 코드블록 점진적 향상.
+ *
+ * Shiki 가 빌드 타임에 하이라이팅을 끝내고 `<pre class="astro-code">` 를 낸다.
+ * MDX 안의 각 코드블록을 컴포넌트로 감쌀 수는 없으므로, 로드 후 DOM에
+ * 복사 버튼만 붙인다. JS가 없어도 코드는 그대로 읽히고 선택·복사할 수 있다.
+ *
+ * 프레임워크 아일랜드를 쓰지 않는다 — 버튼 하나에 런타임을 실을 이유가 없다.
+ */
+interface Props {
+  copyLabel: string;
+  copiedLabel: string;
+}
+
+const { copyLabel, copiedLabel } = Astro.props;
+---
+
+<div data-code-labels data-copy={copyLabel} data-copied={copiedLabel} hidden></div>
+
+<script>
+  const labels = document.querySelector<HTMLElement>("[data-code-labels]");
+  const copyLabel = labels?.dataset.copy ?? "Copy";
+  const copiedLabel = labels?.dataset.copied ?? "Copied";
+
+  for (const pre of document.querySelectorAll<HTMLPreElement>(".prose pre")) {
+    const scroller = document.createElement("div");
+    scroller.className = "code-scroller";
+    pre.parentNode?.insertBefore(scroller, pre);
+    scroller.appendChild(pre);
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "code-copy";
+    button.setAttribute("aria-label", copyLabel);
+    button.innerHTML = '<span aria-hidden="true">⧉</span>';
+
+    button.addEventListener("click", async () => {
+      const text = pre.textContent;
+      if (!text) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        button.dataset.copied = "true";
+        button.setAttribute("aria-label", copiedLabel);
+        button.innerHTML = '<span aria-hidden="true">✓</span>';
+
+        window.setTimeout(() => {
+          delete button.dataset.copied;
+          button.setAttribute("aria-label", copyLabel);
+          button.innerHTML = '<span aria-hidden="true">⧉</span>';
+        }, 1600);
+      } catch {
+        // 클립보드 권한이 없는 환경 — 조용히 실패시키되 상태는 되돌린다.
+        delete button.dataset.copied;
+      }
+    });
+
+    scroller.appendChild(button);
+  }
+</script>

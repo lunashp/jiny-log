@@ -1,0 +1,119 @@
+---
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import ThemeScript from "@/components/layout/ThemeScript.astro";
+import type { Locale } from "@/lib/content";
+import { getMessages } from "@/lib/i18n";
+import { serializeJsonLd, websiteJsonLd } from "@/lib/seo/json-ld";
+import { HTML_LANG, OG_LOCALE, SITE_NAME, absoluteUrl } from "@/lib/seo/site";
+
+import "@/styles/global.css";
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  canonical: string;
+  /** hreflang — 실제 존재하는 번역만 (docs/CONTENT-CONTRACT.md §5) */
+  languages?: Record<string, string>;
+  ogType?: "website" | "article";
+  ogImage?: string;
+  publishedTime?: string;
+  modifiedTime?: string;
+  /** 마크다운 원문 경로 — AI 크롤러가 발견할 수 있게 알린다 */
+  markdownUrl?: string;
+  noindex?: boolean;
+  jsonLd?: string;
+}
+
+const {
+  locale,
+  title,
+  description,
+  canonical,
+  languages,
+  ogType = "website",
+  ogImage,
+  publishedTime,
+  modifiedTime,
+  markdownUrl,
+  noindex = false,
+  jsonLd,
+} = Astro.props;
+
+const m = getMessages(locale);
+const siteName = SITE_NAME[locale];
+const titleTag = title === siteName ? title : `${title} — ${siteName}`;
+---
+
+<!doctype html>
+<html lang={HTML_LANG[locale]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <ThemeScript />
+
+    {/*
+      Pretendard 만 preload 한다 — 제목(LCP 요소)이 이 폰트로 조판된다.
+      Gowun Batang(Answer Block)과 JetBrains Mono(코드)는 늦게 와도 무방하며,
+      셋 다 preload 하면 서브셋의 의미가 사라진다. (docs/DESIGN.md §5)
+    */}
+    <link
+      rel="preload"
+      href="/fonts/pretendard-variable.subset.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
+
+    <title>{titleTag}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    {
+      languages &&
+        Object.entries(languages).map(([hreflang, href]) => (
+          <link rel="alternate" hreflang={hreflang} href={href} />
+        ))
+    }
+
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={siteName}
+      href={absoluteUrl(`/${locale}/feed.xml`)}
+    />
+    {
+      markdownUrl && (
+        <link rel="alternate" type="text/markdown" href={markdownUrl} />
+      )
+    }
+
+    {noindex && <meta name="robots" content="noindex, follow" />}
+
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:locale" content={OG_LOCALE[locale]} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {publishedTime && <meta property="article:published_time" content={publishedTime} />}
+    {modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={jsonLd ?? serializeJsonLd(websiteJsonLd(locale))}
+    />
+  </head>
+
+  <body>
+    <a href="#main" class="skip-link">{m.nav.skipToContent}</a>
+    <SiteHeader locale={locale} />
+    <main id="main"><slot /></main>
+    <SiteFooter locale={locale} />
+  </body>
+</html>
