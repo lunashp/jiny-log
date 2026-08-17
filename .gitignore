@@ -3,13 +3,9 @@ node_modules/
 .pnp
 .pnp.*
 
-# next
-.next/
-out/
-next-env.d.ts
-
-# content-collections generated output
-.content-collections/
+# astro 생성물 (타입·콘텐츠 스토어·로그) — 빌드마다 재생성된다
+.astro/
+.vercel/
 
 # production
 build/
