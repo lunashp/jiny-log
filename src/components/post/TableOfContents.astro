@@ -1,0 +1,132 @@
+---
+import type { Heading, Locale } from "@/lib/content";
+import { getMessages } from "@/lib/i18n";
+
+/**
+ * 목차 — 서버 렌더. JS 없이도 구조가 보여야 한다 (docs/SEO-GEO.md §5-3).
+ * 현재 위치 하이라이트만 작은 인라인 스크립트가 담당한다.
+ */
+interface Props {
+  headings: Heading[];
+  locale: Locale;
+}
+
+const { headings, locale } = Astro.props;
+const m = getMessages(locale);
+---
+
+{
+  headings.length >= 2 && (
+    <nav class="toc" aria-labelledby="toc-heading">
+      <h2 id="toc-heading" class="title">
+        {m.post.tableOfContents}
+      </h2>
+      <ol class="list">
+        {headings.map((heading) => (
+          <li data-depth={heading.depth}>
+            <a href={`#${heading.id}`} class="link">
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+<script>
+  // 스크롤 핸들러 대신 IntersectionObserver 를 쓴다.
+  const links = document.querySelectorAll<HTMLAnchorElement>(".toc .link");
+
+  if (links.length > 0) {
+    const ids = [...links]
+      .map((link) => link.getAttribute("href")?.slice(1))
+      .filter((id): id is string => Boolean(id));
+
+    const visible = new Set<string>();
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target.id);
+          else visible.delete(entry.target.id);
+        }
+
+        // 화면에 걸친 헤딩 중 문서 순서상 가장 앞선 것을 현재 위치로 본다.
+        const current = ids.find((id) => visible.has(id));
+        for (const link of links) {
+          const id = link.getAttribute("href")?.slice(1);
+          link.toggleAttribute("data-current", id === current);
+        }
+      },
+      { rootMargin: "-80px 0px -70% 0px", threshold: 0 },
+    );
+
+    for (const id of ids) {
+      const heading = document.getElementById(id);
+      if (heading) observer.observe(heading);
+    }
+  }
+</script>
+
+<style>
+  .toc {
+    font-size: var(--text-caption);
+    line-height: 1.55;
+  }
+
+  .title {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+    margin: 0 0 0.75rem;
+  }
+
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-inline-start: 1px solid var(--color-rule);
+  }
+
+  .list li {
+    padding-inline-start: 0.85rem;
+  }
+
+  .list li[data-depth="3"] {
+    padding-inline-start: 1.75rem;
+  }
+
+  .list li + li {
+    margin-block-start: 0.45rem;
+  }
+
+  .link {
+    color: var(--color-ink-muted);
+    text-decoration: none;
+    display: block;
+    transition: color var(--duration-fast) ease;
+    text-wrap: pretty;
+  }
+
+  .link:hover {
+    color: var(--color-ink);
+  }
+
+  /* 현재 위치 — 스크립트가 data-current 속성을 토글한다 */
+  .link[data-current] {
+    color: var(--color-signal-resolved);
+  }
+
+  @media (min-width: 1280px) {
+    .toc {
+      position: sticky;
+      inset-block-start: 5rem;
+      max-height: calc(100dvh - 8rem);
+      overflow-y: auto;
+    }
+  }
+</style>

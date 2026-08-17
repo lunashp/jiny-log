@@ -1,0 +1,79 @@
+/*
+ * 웹폰트 — docs/DESIGN.md §4·§5
+ *
+ * 전부 self-host 서브셋이다. `pnpm fonts:build` 가 생성하고
+ * `pnpm fonts:check` 가 CI에서 커버리지·예산을 검사한다.
+ *
+ * 현재 합계 177kB (예산 250kB):
+ *   Pretendard Variable  90kB  — 본문·UI·제목 전부 (preload)
+ *   Gowun Batang         68kB  — Answer Block 전용
+ *   JetBrains Mono       19kB  — 코드·메타 (라틴만, 한글은 Pretendard 폴백)
+ */
+
+@font-face {
+  font-family: "Pretendard Variable";
+  font-style: normal;
+  /* 가변 축을 400–800 로 좁혀 서브셋했다 */
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/pretendard-variable.subset.woff2") format("woff2-variations");
+}
+
+@font-face {
+  font-family: "Gowun Batang";
+  font-style: normal;
+  font-weight: 400;
+  /* Answer Block 전용. preload 하지 않으며 늦게 교체돼도 무방하게 설계했다. */
+  font-display: swap;
+  src: url("/fonts/gowun-batang.subset.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono.subset.woff2") format("woff2");
+}
+
+/*
+ * ---- 폴백 메트릭 정합 ----
+ *
+ * 폰트가 교체되는 순간 글자 크기가 달라지면 줄바꿈이 바뀌고 CLS 가 발생한다.
+ * 시스템 폰트를 실제 폰트의 메트릭에 맞춰 미리 보정해 두면 스왑이 눈에 띄지 않는다.
+ *
+ * 수치는 서브셋 파일에서 추출했다:
+ *   Pretendard    ascent 0.9521  descent -0.2412  xHeight 0.5303
+ *   Gowun Batang  ascent 0.8800  descent -0.1200  xHeight 0.5400
+ *   JetBrains     ascent 1.0200  descent -0.3000  xHeight 0.5500
+ */
+
+@font-face {
+  font-family: "Pretendard Fallback";
+  src: local("Apple SD Gothic Neo"), local("Malgun Gothic"), local("Noto Sans KR"),
+    local("Arial");
+  ascent-override: 95.21%;
+  descent-override: 24.12%;
+  line-gap-override: 0%;
+  /* 시스템 한글 폰트가 Pretendard 보다 약간 크게 잡혀 폭을 맞춘다 */
+  size-adjust: 100%;
+}
+
+@font-face {
+  font-family: "Gowun Batang Fallback";
+  src: local("Apple SD Gothic Neo"), local("Batang"), local("Noto Serif KR"),
+    local("Georgia");
+  ascent-override: 88%;
+  descent-override: 12%;
+  line-gap-override: 0%;
+  size-adjust: 100%;
+}
+
+@font-face {
+  font-family: "JetBrains Mono Fallback";
+  src: local("SF Mono"), local("Menlo"), local("Consolas"), local("monospace");
+  ascent-override: 102%;
+  descent-override: 30%;
+  line-gap-override: 0%;
+  size-adjust: 100%;
+}

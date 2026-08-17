@@ -1,0 +1,85 @@
+---
+/**
+ * 테마 토글 — Astro 아일랜드가 아니라 인라인 스크립트다.
+ *
+ * 프레임워크 컴포넌트로 만들면 React/Preact 런타임이 딸려온다.
+ * 버튼 하나에 치를 값이 아니다. 순수 DOM 이벤트로 끝낸다.
+ */
+interface Props {
+  label: string;
+}
+
+const { label } = Astro.props;
+---
+
+<button type="button" class="toggle" aria-label={label} data-theme-toggle>
+  <span aria-hidden="true" class="icon"></span>
+</button>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+  const icon = button?.querySelector<HTMLElement>(".icon");
+
+  function current(): "light" | "dark" {
+    const attr = document.documentElement.getAttribute("data-theme");
+    if (attr === "dark" || attr === "light") return attr;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+
+  function paint(theme: "light" | "dark") {
+    if (icon) icon.textContent = theme === "dark" ? "◐" : "◑";
+    button?.setAttribute("aria-pressed", String(theme === "dark"));
+    button?.setAttribute("data-ready", "true");
+  }
+
+  if (button) {
+    paint(current());
+
+    button.addEventListener("click", () => {
+      const next = current() === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      try {
+        localStorage.setItem("theme", next);
+      } catch {
+        // 사파리 프라이빗 모드 등 — 저장 실패해도 이번 세션 전환은 동작한다.
+      }
+      paint(next);
+    });
+  }
+</script>
+
+<style>
+  .toggle {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0.25rem;
+    cursor: pointer;
+    color: var(--color-ink-muted);
+    line-height: 1;
+    font-size: 1rem;
+    transition:
+      color var(--duration-fast) ease,
+      transform var(--duration-fast) var(--ease-out-expo);
+  }
+
+  .toggle:hover {
+    color: var(--color-ink);
+  }
+
+  .toggle:active {
+    transform: scale(0.92);
+  }
+
+  /* 스크립트가 상태를 그리기 전에는 잘못된 아이콘이 보이지 않게 한다. */
+  .icon {
+    opacity: 0;
+    transition: opacity var(--duration-fast) ease;
+  }
+
+  .toggle[data-ready="true"] .icon {
+    opacity: 1;
+  }
+</style>

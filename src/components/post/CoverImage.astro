@@ -1,0 +1,49 @@
+---
+import type { ResolvedCover } from "@/lib/content";
+
+/**
+ * 본문 히어로 이미지.
+ *
+ * 위치 판단 (docs/DESIGN.md §1): 제목 **위**가 아니라 **아래**에 둔다.
+ * 이 사이트의 논지는 "산세리프 대제목이 첫 인상"이라, 이미지를 최상단에 두면
+ * 타이포그래피 논지가 밀려난다. 제목 → 이미지 → Answer Block 순서가
+ * 에디토리얼 매거진의 리드 이미지 배치와도 맞는다.
+ *
+ * ★ width/height 는 빌드 타임에 실제 파일에서 읽은 값이다 (lib/content/cover.ts).
+ *   aspect-ratio 가 예약되어 이미지가 도착해도 레이아웃이 밀리지 않는다.
+ */
+interface Props {
+  cover: ResolvedCover;
+  /** 본문 히어로는 LCP 요소가 될 수 있어 즉시 로드한다. */
+  priority?: boolean;
+}
+
+const { cover, priority = false } = Astro.props;
+---
+
+<figure class="cover">
+  <img
+    src={cover.src}
+    alt={cover.alt}
+    width={cover.width}
+    height={cover.height}
+    loading={priority ? "eager" : "lazy"}
+    fetchpriority={priority ? "high" : "auto"}
+    decoding={priority ? "sync" : "async"}
+  />
+</figure>
+
+<style>
+  .cover {
+    margin: 0 0 var(--space-block);
+  }
+
+  .cover img {
+    width: 100%;
+    height: auto;
+    /* width/height 속성으로 aspect-ratio 가 자동 계산되어 자리가 예약된다 */
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-rule);
+    background: var(--color-surface-sunken);
+  }
+</style>

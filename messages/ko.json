@@ -1,0 +1,51 @@
+{
+  "site": {
+    "title": "지니로그",
+    "tagline": "코드를 쓰면서 얻은 것들",
+    "description": "코딩 인사이트와 트러블슈팅 기록. 문제에서 해결까지의 경로를 남깁니다."
+  },
+  "nav": {
+    "home": "홈",
+    "posts": "글",
+    "mainLabel": "주 메뉴",
+    "skipToContent": "본문으로 건너뛰기"
+  },
+  "post": {
+    "publishedOn": "발행",
+    "updatedOn": "수정",
+    "tableOfContents": "목차",
+    "readAlso": "함께 읽기",
+    "tags": "태그",
+    "environment": "환경",
+    "backToList": "글 목록으로",
+    "copyCode": "코드 복사",
+    "copied": "복사됨",
+    "draftBadge": "초안"
+  },
+  "list": {
+    "title": "글",
+    "empty": "아직 이 언어로 쓰인 글이 없습니다.",
+    "tagTitle": "{tag} 태그가 붙은 글",
+    "count": "{count}편"
+  },
+  "category": {
+    "troubleshooting": "트러블슈팅",
+    "insight": "인사이트",
+    "note": "노트",
+    "retrospective": "회고"
+  },
+  "locale": {
+    "switchTo": "English로 보기",
+    "unavailable": "이 글은 한국어로만 있습니다",
+    "current": "한국어"
+  },
+  "error": {
+    "notFoundTitle": "페이지를 찾을 수 없습니다",
+    "notFoundBody": "주소가 바뀌었거나 삭제된 글일 수 있습니다.",
+    "goHome": "홈으로"
+  },
+  "footer": {
+    "rss": "RSS",
+    "sourceNote": "이 글의 마크다운 원문"
+  }
+}

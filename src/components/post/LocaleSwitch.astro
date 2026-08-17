@@ -1,0 +1,64 @@
+---
+import { LOCALES, type Locale } from "@/lib/content";
+import { getMessages } from "@/lib/i18n";
+
+/**
+ * 언어 전환 — 번역이 없으면 비활성 + 설명 (docs/ARCHITECTURE.md §5).
+ * 눌러서 404가 나는 것보다 낫다.
+ */
+interface Props {
+  locale: Locale;
+  slug: string;
+  available: Locale[];
+}
+
+const { locale, slug, available } = Astro.props;
+const m = getMessages(locale);
+const other = LOCALES.find((l) => l !== locale);
+const hasTranslation = other ? available.includes(other) : false;
+---
+
+{
+  other && (
+    <p class="wrap">
+      {hasTranslation ? (
+        <a href={`/${other}/posts/${slug}`} class="link" hreflang={other}>
+          {m.locale.switchTo}
+        </a>
+      ) : (
+        <span class="disabled" aria-disabled="true">
+          {m.locale.unavailable}
+        </span>
+      )}
+    </p>
+  )
+}
+
+<style>
+  .wrap {
+    margin: 1.25rem 0 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+  }
+
+  .link {
+    color: var(--color-ink-muted);
+    text-decoration: underline;
+    text-decoration-color: var(--color-rule-strong);
+    text-underline-offset: 0.25em;
+    transition:
+      color var(--duration-fast) ease,
+      text-decoration-color var(--duration-fast) ease;
+  }
+
+  .link:hover {
+    color: var(--color-signal-resolved);
+    text-decoration-color: currentColor;
+  }
+
+  .disabled {
+    color: var(--color-ink-faint);
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+</style>

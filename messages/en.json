@@ -1,0 +1,51 @@
+{
+  "site": {
+    "title": "jiny log",
+    "tagline": "Notes from writing code",
+    "description": "Engineering insights and troubleshooting notes. The path from problem to resolution, written down."
+  },
+  "nav": {
+    "home": "Home",
+    "posts": "Writing",
+    "mainLabel": "Main navigation",
+    "skipToContent": "Skip to content"
+  },
+  "post": {
+    "publishedOn": "Published",
+    "updatedOn": "Updated",
+    "tableOfContents": "Contents",
+    "readAlso": "Read next",
+    "tags": "Tags",
+    "environment": "Environment",
+    "backToList": "All writing",
+    "copyCode": "Copy code",
+    "copied": "Copied",
+    "draftBadge": "Draft"
+  },
+  "list": {
+    "title": "Writing",
+    "empty": "Nothing written in this language yet.",
+    "tagTitle": "Posts tagged {tag}",
+    "count": "{count} posts"
+  },
+  "category": {
+    "troubleshooting": "Troubleshooting",
+    "insight": "Insight",
+    "note": "Note",
+    "retrospective": "Retrospective"
+  },
+  "locale": {
+    "switchTo": "한국어로 보기",
+    "unavailable": "This post is only available in English",
+    "current": "English"
+  },
+  "error": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The address may have changed, or the post was removed.",
+    "goHome": "Go home"
+  },
+  "footer": {
+    "rss": "RSS",
+    "sourceNote": "Markdown source of this post"
+  }
+}

@@ -1,0 +1,50 @@
+---
+import type { Locale } from "@/lib/content";
+import { getMessages } from "@/lib/i18n";
+import { SITE_NAME } from "@/lib/seo/site";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const m = getMessages(locale);
+const year = new Date().getUTCFullYear();
+---
+
+<footer class="footer">
+  <div class="inner">
+    <span class="meta">© {year} {SITE_NAME[locale]}</span>
+    <a href={`/${locale}/feed.xml`} class="link">{m.footer.rss}</a>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-block-start: 1px solid var(--color-rule);
+    margin-block-start: calc(var(--space-section) * 2);
+  }
+
+  .inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    max-width: 74rem;
+    margin-inline: auto;
+    padding: 1.75rem var(--space-page);
+  }
+
+  .link {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.06em;
+    color: var(--color-ink-muted);
+    text-decoration: none;
+    transition: color var(--duration-fast) ease;
+  }
+
+  .link:hover {
+    color: var(--color-signal-resolved);
+  }
+</style>

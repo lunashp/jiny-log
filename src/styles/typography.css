@@ -1,0 +1,263 @@
+/*
+ * 타이포그래피 — docs/DESIGN.md §4
+ *
+ * 한국어는 라틴보다 행간을 넓게, 자간을 좁게 가야 읽힌다.
+ * word-break: keep-all 을 빠뜨리면 한국어가 단어 중간에서 잘린다 —
+ * 한국어 웹 조판에서 가장 흔한 실수다.
+ */
+
+html {
+  --measure: var(--measure-ko);
+  --leading-body: 1.85;
+  --tracking-body: -0.003em;
+  --leading-heading: 1.28;
+  --tracking-heading: -0.03em;
+}
+
+html[lang="en"] {
+  --measure: var(--measure-en);
+  --leading-body: 1.7;
+  --tracking-body: 0;
+  --leading-heading: 1.12;
+  --tracking-heading: -0.025em;
+}
+
+/*
+ * 한국어는 어절 중간에서 끊으면 안 된다. keep-all 이 그 역할을 한다.
+ * overflow-wrap 은 .prose 에만 건다 — 제목에까지 걸면 긴 라틴 단어가
+ * 단어 중간에서 쪼개진다 ("hydrati / on").
+ */
+html[lang="ko"] body {
+  word-break: keep-all;
+}
+
+html[lang="ko"] .prose {
+  overflow-wrap: break-word;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+  font-feature-settings: "kern" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-sans);
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-heading);
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+/*
+ * 산세리프 대제목. 세리프 대제목이 에디토리얼의 기본값이라 뒤집었다.
+ *
+ * ★ measure(max-width)를 제목 요소 자신에게 건다.
+ *   `ch` 는 그 요소의 font-size 기준으로 계산되므로, 부모 컨테이너에 걸면
+ *   본문 크기(17px)로 계산되어 컬럼이 1/4 로 쪼그라든다.
+ */
+.post-title {
+  font-size: var(--text-title);
+  font-weight: 800;
+  max-width: 20ch;
+}
+
+.display-title {
+  font-size: var(--text-display);
+  font-weight: 800;
+  max-width: 13ch;
+}
+
+/*
+ * ★ 시그니처: 해답 블록 (docs/DESIGN.md §2)
+ * 페이지에서 세리프가 등장하는 유일한 곳.
+ * 가장 중요한 텍스트(GEO 자산)에 유일한 서체 대비를 쓴다.
+ */
+.answer-block {
+  font-family: var(--font-serif);
+  font-size: var(--text-lede);
+  line-height: 1.7;
+  letter-spacing: 0;
+  border-inline-start: 3px solid var(--category-color, var(--color-ink-muted));
+  padding-inline-start: 1.25rem;
+  margin-block: var(--space-block);
+  color: var(--color-ink);
+  text-wrap: pretty;
+}
+
+/* 메타·레일·버전 스탬프 */
+.meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  letter-spacing: 0.02em;
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--category-color, var(--color-ink-muted));
+}
+
+/* ---- 본문 (prose) ---- */
+
+.prose {
+  max-width: var(--measure);
+}
+
+.prose > * + * {
+  margin-block-start: var(--space-flow);
+}
+
+/* H2 위 여백은 문단 간격의 2배 이상이어야 섹션 경계가 읽힌다 */
+.prose > h2 {
+  margin-block-start: var(--space-section);
+  font-size: var(--text-h2);
+}
+
+.prose > h3 {
+  margin-block-start: calc(var(--space-flow) * 1.8);
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+
+.prose > h2:first-child,
+.prose > h3:first-child {
+  margin-block-start: 0;
+}
+
+.prose a {
+  color: var(--color-signal-resolved);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in oklch, currentColor 40%, transparent);
+  text-underline-offset: 0.2em;
+  transition:
+    text-decoration-color var(--duration-fast) ease,
+    text-underline-offset var(--duration-fast) ease;
+}
+
+.prose a:hover {
+  text-decoration-color: currentColor;
+  text-underline-offset: 0.12em;
+}
+
+.prose strong {
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.prose ul,
+.prose ol {
+  padding-inline-start: 1.4em;
+}
+
+.prose li + li {
+  margin-block-start: 0.4em;
+}
+
+.prose ul {
+  list-style: square;
+}
+
+.prose ol {
+  list-style: decimal;
+}
+
+.prose blockquote {
+  border-inline-start: 2px solid var(--color-rule-strong);
+  padding-inline-start: 1.1rem;
+  color: var(--color-ink-muted);
+}
+
+.prose hr {
+  border: 0;
+  border-block-start: 1px solid var(--color-rule);
+  margin-block: var(--space-section);
+}
+
+/* ---- 표 ---- */
+
+/*
+ * 표는 자기 안에서만 가로 스크롤한다. 페이지 본문은 절대 가로 스크롤 없음.
+ * JS 래퍼 없이 CSS만으로 처리해 스크립트가 없어도 동작한다.
+ */
+.prose table {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.9375em;
+  line-height: 1.6;
+  margin-block: var(--space-block);
+}
+
+.prose th,
+.prose td {
+  text-align: start;
+  padding: 0.55rem 0.9rem 0.55rem 0;
+  border-block-end: 1px solid var(--color-rule);
+  vertical-align: top;
+}
+
+.prose th {
+  font-weight: 700;
+  font-size: var(--text-caption);
+  letter-spacing: 0.02em;
+  color: var(--color-ink-muted);
+  border-block-end-color: var(--color-rule-strong);
+  white-space: nowrap;
+}
+
+/* ---- 인라인 코드 ---- */
+
+.prose :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  padding: 0.1em 0.35em;
+  word-break: break-word;
+}
+
+/* ---- 이미지 ---- */
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+.prose figure {
+  margin-block: var(--space-block);
+}
+
+.prose figcaption {
+  font-size: var(--text-caption);
+  color: var(--color-ink-muted);
+  margin-block-start: 0.6rem;
+}
+
+/* 헤딩 앵커 — rehype-autolink-headings 가 wrap 으로 감싼다 */
+.prose .heading-anchor {
+  color: inherit;
+  text-decoration: none;
+}
+
+.prose .heading-anchor:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule-strong);
+  text-underline-offset: 0.15em;
+}

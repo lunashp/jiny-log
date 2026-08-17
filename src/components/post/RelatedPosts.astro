@@ -1,0 +1,94 @@
+---
+import type { Locale, PostSummary } from "@/lib/content";
+import { getMessages, localeHref } from "@/lib/i18n";
+
+interface Props {
+  posts: PostSummary[];
+  locale: Locale;
+}
+
+const { posts, locale } = Astro.props;
+const m = getMessages(locale);
+---
+
+{
+  posts.length > 0 && (
+    <section class="section" aria-labelledby="related-heading">
+      <h2 id="related-heading" class="heading">
+        {m.post.readAlso}
+      </h2>
+      <ul class="list">
+        {posts.map((post) => (
+          <li data-category={post.category}>
+            <a href={localeHref(locale, `/posts/${post.slug}`)} class="link">
+              <time class="date" datetime={post.date}>
+                {post.date}
+              </time>
+              <span class="title">{post.title}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  .section {
+    margin-block-start: var(--space-section);
+    padding-block-start: 1.5rem;
+    border-block-start: 1px solid var(--color-rule-strong);
+    max-width: var(--measure);
+  }
+
+  .heading {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+    margin: 0 0 0.9rem;
+  }
+
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .list li + li {
+    margin-block-start: 0.6rem;
+  }
+
+  .link {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .date {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-ink-faint);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  .title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.45;
+    border-block-end: 1px solid transparent;
+    transition:
+      color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
+  }
+
+  .link:hover .title {
+    color: var(--color-signal-resolved);
+    border-block-end-color: currentColor;
+  }
+</style>

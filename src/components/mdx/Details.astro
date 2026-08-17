@@ -1,0 +1,46 @@
+---
+/**
+ * 긴 로그·부록용.
+ * ★ 접힌 내용은 인용되기 어렵다 — 중요한 건 펼쳐 둔다.
+ */
+interface Props {
+  summary: string;
+}
+
+const { summary } = Astro.props;
+---
+
+<details class="details">
+  <summary>{summary}</summary>
+  <div class="body"><slot /></div>
+</details>
+
+<style>
+  .details {
+    margin-block: var(--space-block);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    background: var(--color-surface);
+  }
+
+  .details summary {
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.9375rem;
+  }
+
+  .details summary:focus-visible {
+    outline: 2px solid var(--color-signal-resolved);
+    outline-offset: 3px;
+  }
+
+  .body {
+    margin-block-start: 0.85rem;
+    font-size: 0.9375rem;
+  }
+
+  .body > :global(:first-child) {
+    margin-block-start: 0;
+  }
+</style>
