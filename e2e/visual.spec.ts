@@ -5,6 +5,19 @@ import { expect, test, type Page } from "@playwright/test";
  *
  * 스냅샷은 `pnpm test:e2e --update-snapshots` 로 갱신한다.
  * 디자인을 의도적으로 바꿨을 때만 갱신하고, 예상치 못한 diff 는 버그로 본다.
+ *
+ * ★ 스냅샷 테스트에는 `@snapshot` 태그가 붙어 있고 **CI 에서는 제외된다.**
+ *
+ *   Playwright 는 스냅샷을 플랫폼별로 분리 저장한다(`…-darwin.png` / `…-linux.png`).
+ *   폰트 래스터라이징이 macOS 와 Linux 에서 달라 같은 화면도 픽셀이 어긋나므로,
+ *   한쪽에서 만든 베이스라인을 다른 쪽에서 쓸 수 없다.
+ *
+ *   Linux 베이스라인을 만들려면 공식 Playwright 도커 이미지가 필요하다:
+ *     docker run --rm -v $PWD:/w -w /w mcr.microsoft.com/playwright:v1.62.1-noble \
+ *       sh -c "npm i -g pnpm && pnpm i && pnpm test:e2e --update-snapshots"
+ *
+ *   그 전까지 스냅샷은 **로컬(macOS) 전용**이다. CI 는 플랫폼에 무관한 검사
+ *   (a11y·폰트·오버플로·measure)만 돌린다 — 이쪽이 회귀를 잡는 주력이기도 하다.
  */
 
 /** 폰트 로드와 진입 애니메이션이 끝난 뒤에 찍어야 스냅샷이 안정적이다. */
@@ -25,7 +38,7 @@ const WIDTHS = [320, 768, 1024, 1440];
 
 for (const scheme of ["light", "dark"] as const) {
   for (const target of PAGES) {
-    test(`시각회귀 — ${target.name} / ${scheme}`, async ({ page }) => {
+    test(`시각회귀 — ${target.name} / ${scheme}`, { tag: "@snapshot" }, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto(target.path);

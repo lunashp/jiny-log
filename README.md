@@ -42,7 +42,8 @@ pnpm preview
 pnpm lint
 pnpm typecheck      # astro check
 pnpm test           # vitest 유닛 (60개)
-pnpm test:e2e       # Playwright — 폰트·a11y·시각회귀 (28개)
+pnpm test:e2e       # Playwright 전체 — 폰트·a11y·반응형·시각회귀 (31개)
+pnpm test:e2e:ci    # 시각회귀 제외 (25개) — CI 가 쓰는 명령
 pnpm check:budget   # 번들 예산 (build 후)
 pnpm fonts:check    # 폰트 서브셋 커버리지·예산 (CI)
 pnpm fonts:build    # 폰트 서브셋 재생성 (로컬 전용, Python 필요)

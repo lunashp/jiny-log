@@ -49,8 +49,9 @@ jobs:
       - name: Install Playwright
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: E2E (a11y + visual + fonts)
-        run: pnpm test:e2e
+      # 시각회귀 스냅샷은 플랫폼 종속이라 제외한다 (e2e/visual.spec.ts 주석 참조)
+      - name: E2E (a11y + 폰트 + 반응형)
+        run: pnpm test:e2e:ci
 
       - uses: actions/upload-artifact@v4
         if: failure()

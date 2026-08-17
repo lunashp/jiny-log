@@ -18,7 +18,8 @@
     "test:e2e": "playwright test",
     "check:budget": "node tools/ci/check-budget.mjs",
     "fonts:build": "node tools/fonts/build-fonts.mjs",
-    "fonts:check": "node tools/fonts/check-fonts.mjs"
+    "fonts:check": "node tools/fonts/check-fonts.mjs",
+    "test:e2e:ci": "playwright test --grep-invert @snapshot"
   },
   "dependencies": {
     "@astrojs/mdx": "7.0.5",
