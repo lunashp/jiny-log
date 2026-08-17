@@ -96,6 +96,9 @@ Next.js 16 으로 Phase 0–4 를 구현한 뒤 번들 실측에서 전환 조�
 4. **접근성** — axe (wcag2a/2aa/21a/21aa) 전 라우트 + 다크모드, 키보드 순회, 포커스 가시성,
    reduced-motion, 헤딩 레벨
 5. **시각회귀** — 3페이지 × 라이트/다크 스냅샷, 4개 폭 오버플로 검사
+   - ⚠️ 스냅샷은 `@snapshot` 태그로 **CI 에서 제외**한다. Playwright 가 플랫폼별로
+     저장하는데 폰트 래스터라이징이 macOS/Linux 에서 달라 베이스라인을 공유할 수 없다.
+     Linux 베이스라인이 필요하면 공식 Playwright 도커 이미지로 생성한다.
 6. **CI** — `.github/workflows/ci.yml`
 
 ### 이 Phase 가 실제로 잡아낸 것
