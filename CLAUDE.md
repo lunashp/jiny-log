@@ -3,7 +3,8 @@
 코딩 인사이트/트러블슈팅을 기록하는 개인 블로그. Vercel 배포, 한국어+영어 이중 언어.
 **이 저장소의 존재 이유는 "검색엔진과 AI가 잘 읽고, 사람도 잘 읽는 글"을 안정적으로 내보내는 것이다.** 모든 기술 결정은 그 기준으로 판단한다.
 
-관련 저장소: [`../blog-publisher`](../blog-publisher/) — 이 블로그에 글을 발행하는 MCP 서버.
+프로덕션: <https://jiny-log.vercel.app>
+관련 저장소: [`blog-publisher`](https://github.com/lunashp/blog-publisher) — 이 블로그에 글을 발행하는 MCP 서버.
 
 ---
 
@@ -196,6 +197,8 @@ pnpm fonts:build    # 폰트 서브셋 재생성 (로컬 전용. Python + fontTo
 `pnpm fonts:build` 를 돌리고 `public/fonts/` 와 `tools/fonts/charset.json` 을 함께 커밋한다.
 
 환경변수 `PUBLIC_SITE_URL` 이 필요하다. 프로덕션 빌드에서 미설정이면 실패한다.
+프로덕션 값은 `https://jiny-log.vercel.app` 이며 Vercel 프로젝트 환경변수와
+`.github/workflows/ci.yml` 의 `env` 블록 양쪽에 들어가 있다.
 
 ---
 

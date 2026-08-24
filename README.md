@@ -1,14 +1,24 @@
 # 지니로그 (jiny-log)
 
-코드를 쓰면서 얻은 인사이트와 트러블슈팅 기록을 쌓는 개인 기술 블로그.
+**→ https://jiny-log.vercel.app**
+
+코드를 쓰면서 얻은 인사이트와 트러블슈팅 기록을 쌓는 개인 기술 블로그이자 케이스 스터디 표면.
 검색엔진과 AI 어시스턴트가 **인용하기 좋은 형태**로 발행되며, 사람이 길게 읽어도 피로하지 않은 에디토리얼 디자인을 지향한다.
 
-- 한국어 + 영어 이중 언어
-- Astro 7 / MDX / Vercel
-- 글은 [`blog-publisher`](../blog-publisher/) MCP 서버를 통해 발행된다
+- 한국어 + 영어 이중 언어 (`/ko`, `/en`)
+- Astro 7 / MDX / Vercel — 클라이언트 JS 2.2kB
+- 글은 [`blog-publisher`](https://github.com/lunashp/blog-publisher) MCP 서버를 통해 발행된다
 
-> **상태: Phase 0–5 구현 완료.** 콘텐츠 파이프라인·i18n·디자인 시스템·SEO/GEO 표면·
-> 폰트 self-host·접근성/시각회귀 테스트가 모두 동작한다. 남은 것은 Phase 6(배포·분석·발행 연동).
+| | |
+|---|---|
+| 프로덕션 | <https://jiny-log.vercel.app> |
+| 글 목록 | <https://jiny-log.vercel.app/ko/posts> |
+| 케이스 스터디 | <https://jiny-log.vercel.app/ko/work> |
+| 소개 | <https://jiny-log.vercel.app/ko/about> |
+| `llms.txt` | <https://jiny-log.vercel.app/llms.txt> |
+
+> **상태: Phase 0–6 구현 완료 · 프로덕션 배포 중.** 콘텐츠 파이프라인·i18n·디자인 시스템·
+> SEO/GEO 표면·폰트 self-host·접근성/시각회귀 테스트·Vercel 배포가 모두 동작한다.
 
 ---
 
@@ -57,7 +67,7 @@ pnpm fonts:build    # 폰트 서브셋 재생성 (로컬 전용, Python 필요)
 
 | 이름 | 필수 | 설명 |
 |---|:---:|---|
-| `PUBLIC_SITE_URL` | ✅ | canonical·sitemap·OG 절대 URL 생성. 예: `https://example.com` |
+| `PUBLIC_SITE_URL` | ✅ | canonical·sitemap·OG 절대 URL 생성. 프로덕션: `https://jiny-log.vercel.app` |
 
 ---
 
@@ -80,9 +90,13 @@ public/images/<slug>/    # 글별 자산
 ## 배포
 
 ```
-main 브랜치 push → Vercel 빌드 → 프로덕션
+main 브랜치 push → Vercel 빌드 → https://jiny-log.vercel.app
 그 외 브랜치/PR   → Vercel Preview 배포 (초안 확인용)
 ```
+
+Vercel 프로젝트에 `PUBLIC_SITE_URL=https://jiny-log.vercel.app` 가 설정되어 있다.
+커스텀 도메인으로 옮길 때 바꿀 곳은 **세 군데**다 — Vercel 환경변수,
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) 의 `env`, 그리고 이 README.
 
 빌드는 frontmatter 검증과 번들 예산 검사를 통과해야 성공한다. 둘 중 하나라도 실패하면 배포되지 않는다.
 
