@@ -25,6 +25,14 @@ const ROUTES = [
   { name: "홈 (en)", path: "/en" },
   { name: "글 목록", path: "/ko/posts" },
   { name: "글 본문", path: "/ko/posts/nextjs-hydration-mismatch" },
+  // 본문 이미지가 있는 글 — alt 누락과 이미지로 인한 대비 문제는
+  // 이미지 없는 글만 검사하면 영원히 잡히지 않는다.
+  {
+    name: "글 본문 (본문 이미지 12장)",
+    path: "/ko/posts/gitlab-sonarqube-integration",
+  },
+  // 표가 있는 글 — 표 헤더 연결(th scope)은 표 없는 라우트에서 검사되지 않는다.
+  { name: "글 본문 (표)", path: "/ko/posts/secret-talk-project-plan" },
   { name: "태그", path: "/ko/tags/nextjs" },
   { name: "케이스 목록", path: "/ko/work" },
   { name: "케이스 본문", path: "/ko/work/paywall-tier-modeling" },
