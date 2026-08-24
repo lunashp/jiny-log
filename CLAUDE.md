@@ -19,6 +19,7 @@
 | [`docs/POST-TEMPLATE.md`](./docs/POST-TEMPLATE.md) | **글 작성 틀 — 무엇을 채우면 화면이 어떻게 되는가** |
 | [`docs/DESIGN.md`](./docs/DESIGN.md) | 에디토리얼 디자인 방향, 토큰, 타이포 |
 | [`docs/PLAN.md`](./docs/PLAN.md) | 단계별 구현 계획과 완료 기준 |
+| [`docs/PORTFOLIO.md`](./docs/PORTFOLIO.md) | **케이스 스터디 표면 — 포트폴리오 확장 설계** |
 
 ---
 

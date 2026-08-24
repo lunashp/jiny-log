@@ -25,6 +25,7 @@
 | [`docs/POST-TEMPLATE.md`](./docs/POST-TEMPLATE.md) | **글 작성 틀 — 복붙 템플릿 + 필드↔화면 매핑** |
 | [`docs/DESIGN.md`](./docs/DESIGN.md) | 에디토리얼 디자인 방향, 토큰, 타이포 |
 | [`docs/PLAN.md`](./docs/PLAN.md) | Phase별 구현 계획과 완료 조건 |
+| [`docs/PORTFOLIO.md`](./docs/PORTFOLIO.md) | **케이스 스터디 표면 — 포트폴리오 확장 설계** |
 
 **처음 읽는 순서:** `PRD` → `ARCHITECTURE` → `CONTENT-CONTRACT` → `PLAN`
 
