@@ -1,9 +1,9 @@
 import type { CollectionEntry } from "astro:content";
 
-import type { Category, Locale } from "./schema";
+import type { Category, Locale, WorkLink } from "./schema";
 import type { Heading } from "./headings";
 
-export type { Category, Locale, Heading };
+export type { Category, Locale, Heading, WorkLink };
 
 export type Cover = {
   src: string;
@@ -43,5 +43,33 @@ export interface Post extends PostSummary {
   /** 원본 마크다운. raw markdown 라우트와 llms.txt 에서 사용. */
   raw: string;
   related: string[];
+  headings: Heading[];
+}
+
+/** 케이스 목록·사이트맵에 필요한 최소 정보. 본문을 포함하지 않는다. */
+export interface WorkSummary {
+  slug: string;
+  locale: Locale;
+  title: string;
+  description: string;
+  date: string;
+  updated?: string;
+  summary?: string;
+  tags: string[];
+  canonical?: string;
+  cover?: ResolvedCover;
+  draft: boolean;
+  /** 기여 범위를 역할 언어로. 인원수를 쓰지 않는다. */
+  role: string;
+  period: string;
+  stack: string[];
+  links: WorkLink[];
+}
+
+/** 본문 렌더링까지 필요한 전체 정보. */
+export interface Work extends WorkSummary {
+  entry: CollectionEntry<"work">;
+  /** 원본 마크다운. llms.txt 에서 사용. */
+  raw: string;
   headings: Heading[];
 }

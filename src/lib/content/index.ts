@@ -17,6 +17,16 @@ export {
   renderPost,
 } from "./queries";
 
+export {
+  getAllFullWorks,
+  getAllWorks,
+  getAvailableWorkLocales,
+  getWorkBySlug,
+  getWorks,
+  isWorkVisible,
+  renderWork,
+} from "./work";
+
 export type {
   Category,
   Cover,
@@ -25,6 +35,9 @@ export type {
   Post,
   PostSummary,
   ResolvedCover,
+  Work,
+  WorkLink,
+  WorkSummary,
 } from "./types";
 
 export {

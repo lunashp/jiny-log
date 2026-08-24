@@ -1,7 +1,7 @@
 import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
 
-import { PostFrontmatterSchema } from "./lib/content/schema";
+import { PostFrontmatterSchema, WorkFrontmatterSchema } from "./lib/content/schema";
 
 /**
  * 콘텐츠 파이프라인 설정.
@@ -24,4 +24,18 @@ const posts = defineCollection({
   schema: PostFrontmatterSchema,
 });
 
-export const collections = { posts };
+/**
+ * 케이스 스터디. 글과 같은 파이프라인을 쓰되 컬렉션을 분리한다 —
+ * 한 컬렉션에 섞으면 목록·RSS·사이트맵에서 매번 걸러내야 하고 언젠가 하나를 빠뜨린다.
+ * (docs/PORTFOLIO.md §6-1)
+ */
+const work = defineCollection({
+  loader: glob({
+    pattern: "**/*.mdx",
+    base: "./content/work",
+    retainBody: true,
+  }),
+  schema: WorkFrontmatterSchema,
+});
+
+export const collections = { posts, work };
