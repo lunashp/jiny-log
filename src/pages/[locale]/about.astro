@@ -4,7 +4,7 @@ import { getAbout } from "@/lib/about";
 import { LOCALES, type Locale } from "@/lib/content";
 import { getMessages } from "@/lib/i18n";
 import { buildStaticHreflang } from "@/lib/seo/hreflang";
-import { AUTHOR, absoluteUrl } from "@/lib/seo/site";
+import { absoluteUrl } from "@/lib/seo/site";
 
 export function getStaticPaths() {
   return LOCALES.map((locale) => ({ params: { locale } }));
@@ -24,7 +24,23 @@ const about = getAbout(locale);
 >
   <div class="page">
     <header class="header">
-      <h1 class="post-title title reveal">{m.about.title}</h1>
+      <h1 class="post-title title reveal">{about.profile.name}</h1>
+      <p class="role">{about.profile.title}</p>
+
+      {/* 연락 수단이 없으면 포트폴리오가 일을 못 한다. 제목 바로 아래에 둔다. */}
+      <ul class="contact" aria-label={m.about.contactHeading}>
+        <li>
+          <a href={`mailto:${about.profile.email}`}>{about.profile.email}</a>
+        </li>
+        <li>
+          <a
+            href={`https://${about.profile.github}`}
+            rel="noopener noreferrer"
+            target="_blank">{about.profile.github}</a
+          >
+        </li>
+      </ul>
+
       <p class="lede reveal-delayed">{about.lede}</p>
     </header>
 
@@ -69,9 +85,6 @@ const about = getAbout(locale);
       <section class="block" aria-labelledby="this-site">
         <h2 id="this-site" class="heading">{m.about.siteHeading}</h2>
         {about.site.map((text) => <p class="prose-p">{text}</p>)}
-        <p class="note">
-          <a href={AUTHOR.github} rel="noopener noreferrer" target="_blank">GitHub</a>
-        </p>
       </section>
     </div>
   </div>
@@ -92,8 +105,38 @@ const about = getAbout(locale);
     margin: 0;
   }
 
+  .role {
+    margin: 0.75rem 0 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.06em;
+    color: var(--color-ink-faint);
+  }
+
+  .contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    list-style: none;
+    margin: 0.9rem 0 0;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+  }
+
+  .contact a {
+    color: var(--color-ink-muted);
+    text-decoration-color: var(--color-rule-strong);
+    text-underline-offset: 0.25em;
+    transition: color var(--duration-fast) ease;
+  }
+
+  .contact a:hover {
+    color: var(--color-signal-resolved);
+  }
+
   .lede {
-    margin: 1rem 0 0;
+    margin: 1.75rem 0 0;
     max-width: 46ch;
   }
 

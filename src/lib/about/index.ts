@@ -7,8 +7,9 @@ import type { Locale } from "@/lib/content";
  * UI 문자열이 아니라 **구조를 가진 콘텐츠**이기 때문이다. JSON 에 긴 산문을 넣으면
  * 줄바꿈이 escape 로 깨지고 타입도 얻지 못한다.
  *
- * ★ 연락처(휴대폰·이메일)를 여기에 넣지 않는다 — 공개 페이지에 두면 크롤러가 수집한다.
- *   이력서 전문은 지원 시 개별 전달한다 (docs/PORTFOLIO.md §2).
+ * ★ 이메일과 GitHub 은 공개한다 — 채용 담당자가 연락할 수단이 없으면 포트폴리오가 일을 못 한다.
+ *   휴대폰 번호와 이력서 PDF 는 넣지 않는다. 한 번 수집되면 회수할 수 없고,
+ *   포트폴리오에 필요한 정보도 아니다 (docs/PORTFOLIO.md §2).
  */
 
 export interface CareerRow {
@@ -23,7 +24,15 @@ export interface OtherWork {
   summary: string;
 }
 
+export interface Profile {
+  name: string;
+  title: string;
+  email: string;
+  github: string;
+}
+
 export interface AboutContent {
+  profile: Profile;
   lede: string;
   paragraphs: string[];
   career: CareerRow[];
@@ -32,6 +41,12 @@ export interface AboutContent {
 }
 
 const ko: AboutContent = {
+  profile: {
+    name: "양희진",
+    title: "프론트엔드 개발자",
+    email: "hijnshp@gmail.com",
+    github: "github.com/lunashp",
+  },
   lede: "클라우드 엔지니어에서 풀스택을 거쳐 프론트엔드로 옮겨온 개발자입니다.",
   paragraphs: [
     "AI 브랜드 분석 SaaS 에서 프론트엔드 개발자 1명 체제로 일하고 있습니다. 분석 대시보드·사내 운영 백오피스·리더보드·랜딩·블로그 플랫폼·회사 소개 사이트·사내 업무 시스템까지 웹 프로덕트 7건의 프론트엔드를 전담했고, 그중 4건은 요구사항 정리부터 배포 구성까지 0에서 만들었습니다.",
@@ -93,6 +108,12 @@ const ko: AboutContent = {
 };
 
 const en: AboutContent = {
+  profile: {
+    name: "Heejin Yang",
+    title: "Frontend Developer",
+    email: "hijnshp@gmail.com",
+    github: "github.com/lunashp",
+  },
   lede: "A frontend developer who came by way of cloud engineering and full-stack work.",
   paragraphs: [
     "I am the sole frontend developer at an AI brand-analytics SaaS. I own the frontend of seven web products — the analytics dashboard, internal back office, leaderboard, landing site, blog platform, company site, and an internal operations system. Four of them I built from zero, from requirements through deployment.",

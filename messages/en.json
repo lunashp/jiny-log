@@ -25,8 +25,9 @@
   "about": {
     "title": "About",
     "careerHeading": "Career",
-    "resumeNote": "The full resume is shared individually on application.",
+    "resumeNote": "If you would like the full resume, just drop me an email.",
     "siteHeading": "About this site",
+    "contactHeading": "Contact",
     "otherWorkHeading": "Other work"
   },
   "post": {
