@@ -26,6 +26,10 @@ const ROUTES = [
   { name: "글 목록", path: "/ko/posts" },
   { name: "글 본문", path: "/ko/posts/nextjs-hydration-mismatch" },
   { name: "태그", path: "/ko/tags/nextjs" },
+  { name: "케이스 목록", path: "/ko/work" },
+  { name: "케이스 본문", path: "/ko/work/paywall-tier-modeling" },
+  { name: "소개 (ko)", path: "/ko/about" },
+  { name: "소개 (en)", path: "/en/about" },
 ];
 
 for (const route of ROUTES) {
