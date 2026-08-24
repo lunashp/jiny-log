@@ -47,13 +47,8 @@ vi.mock("astro:content", () => ({
   },
 }));
 
-const {
-  getAllWorks,
-  getAvailableWorkLocales,
-  getWorkBySlug,
-  getWorks,
-  isWorkVisible,
-} = await import("./work");
+const { getAllWorks, getAvailableWorkLocales, getWorkBySlug, getWorks, isWorkVisible } =
+  await import("./work");
 
 beforeEach(() => {
   // 검증하려는 계약은 **프로덕션 동작**이다. vitest 는 기본적으로 DEV=true 라
