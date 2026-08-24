@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PUBLIC_SITE_URL: https://example.com
+  PUBLIC_SITE_URL: https://jiny-log.vercel.app
 
 jobs:
   verify:
