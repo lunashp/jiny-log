@@ -31,8 +31,7 @@ const ROUTES = [
     name: "글 본문 (본문 이미지 12장)",
     path: "/ko/posts/gitlab-sonarqube-integration",
   },
-  // 표가 있는 글 — 표 헤더 연결(th scope)은 표 없는 라우트에서 검사되지 않는다.
-  { name: "글 본문 (표)", path: "/ko/posts/secret-talk-project-plan" },
+  // 표는 위 "글 본문"(nextjs-hydration-mismatch)이 이미 커버한다 — 별도 라우트 불필요.
   { name: "태그", path: "/ko/tags/nextjs" },
   { name: "케이스 목록", path: "/ko/work" },
   { name: "케이스 본문", path: "/ko/work/paywall-tier-modeling" },
