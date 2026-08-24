@@ -1,8 +1,10 @@
 ---
 import PostList from "@/components/post/PostList.astro";
+import WorkList from "@/components/work/WorkList.astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import { LOCALES, getPosts, type Locale } from "@/lib/content";
-import { getMessages } from "@/lib/i18n";
+import { getAbout } from "@/lib/about";
+import { LOCALES, getPosts, getWorks, type Locale } from "@/lib/content";
+import { getMessages, localeHref } from "@/lib/i18n";
 import { buildStaticHreflang } from "@/lib/seo/hreflang";
 import { absoluteUrl } from "@/lib/seo/site";
 
@@ -12,7 +14,17 @@ export function getStaticPaths() {
 
 const locale = Astro.params.locale as Locale;
 const m = getMessages(locale);
-const posts = await getPosts(locale);
+const about = getAbout(locale);
+
+const [works, posts] = await Promise.all([getWorks(locale), getPosts(locale)]);
+
+/**
+ * 홈은 블로그 인덱스가 아니라 포트폴리오 랜딩이다 (docs/PORTFOLIO.md §5).
+ * 처음 보는 사람이 글 목록부터 만나면 "이 사람이 무엇을 만들었나"에 답하지 못한다.
+ * 케이스를 전면에 두고 글은 그 아래로 내린다.
+ */
+const RECENT_POSTS = 4;
+const recentPosts = posts.slice(0, RECENT_POSTS);
 ---
 
 <BaseLayout
@@ -25,10 +37,24 @@ const posts = await getPosts(locale);
   <div class="page">
     <section class="intro" aria-labelledby="intro-heading">
       <h1 id="intro-heading" class="display-title title reveal">{m.site.tagline}</h1>
-      <p class="lede reveal-delayed">{m.site.description}</p>
+      <p class="lede reveal-delayed">{about.lede}</p>
     </section>
 
-    <PostList locale={locale} posts={posts} />
+    <section class="section" aria-labelledby="work-heading">
+      <div class="section-head">
+        <h2 id="work-heading" class="section-title">{m.work.title}</h2>
+        <a href={localeHref(locale, "/work")} class="more">{m.work.title} →</a>
+      </div>
+      <WorkList locale={locale} works={works} />
+    </section>
+
+    <section class="section" aria-labelledby="posts-heading">
+      <div class="section-head">
+        <h2 id="posts-heading" class="section-title">{m.list.title}</h2>
+        <a href={localeHref(locale, "/posts")} class="more">{m.list.title} →</a>
+      </div>
+      <PostList locale={locale} posts={recentPosts} />
+    </section>
   </div>
 </BaseLayout>
 
@@ -40,7 +66,7 @@ const posts = await getPosts(locale);
   }
 
   .intro {
-    margin-block-end: clamp(3.5rem, 2rem + 7vw, 8rem);
+    margin-block-end: clamp(3rem, 2rem + 6vw, 6rem);
   }
 
   .title {
@@ -55,5 +81,40 @@ const posts = await getPosts(locale);
     line-height: 1.6;
     color: var(--color-ink-muted);
     text-wrap: pretty;
+  }
+
+  .section + .section {
+    margin-block-start: var(--space-section);
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-block-end: 1.25rem;
+  }
+
+  .section-title {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+    margin: 0;
+  }
+
+  .more {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-ink-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--duration-fast) ease;
+  }
+
+  .more:hover {
+    color: var(--color-signal-resolved);
   }
 </style>

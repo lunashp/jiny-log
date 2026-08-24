@@ -17,7 +17,9 @@ const m = getMessages(locale);
     <a href={localeHref(locale, "/")} class="wordmark">{SITE_NAME[locale]}</a>
 
     <nav aria-label={m.nav.mainLabel} class="nav">
+      <a href={localeHref(locale, "/work")} class="link">{m.nav.work}</a>
       <a href={localeHref(locale, "/posts")} class="link">{m.nav.posts}</a>
+      <a href={localeHref(locale, "/about")} class="link">{m.nav.about}</a>
       <ThemeToggle label={m.nav.mainLabel} />
     </nav>
   </div>

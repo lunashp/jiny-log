@@ -20,6 +20,8 @@ const BUDGETS = [
   { label: "홈", html: "ko/index.html", js: 10_000, css: 20_000 },
   { label: "글 목록", html: "ko/posts/index.html", js: 10_000, css: 20_000 },
   { label: "태그", html: "ko/tags/nextjs/index.html", js: 10_000, css: 20_000 },
+  { label: "케이스 목록", html: "ko/work/index.html", js: 10_000, css: 20_000 },
+  { label: "소개", html: "ko/about/index.html", js: 10_000, css: 20_000 },
 ];
 
 const ASSET_RE = /(?:href|src)="(\/[^"]+?\.(?:js|css))"/g;

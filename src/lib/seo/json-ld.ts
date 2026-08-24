@@ -1,5 +1,13 @@
-import type { Locale, Post } from "@/lib/content";
-import { AUTHOR, HTML_LANG, SITE_NAME, SITE_URL, absoluteUrl, postUrl } from "./site";
+import type { Locale, Post, Work } from "@/lib/content";
+import {
+  AUTHOR,
+  HTML_LANG,
+  SITE_NAME,
+  SITE_URL,
+  absoluteUrl,
+  postUrl,
+  workUrl,
+} from "./site";
 
 /**
  * 채택한 타입: BlogPosting / Person / WebSite+SearchAction / BreadcrumbList
@@ -38,6 +46,34 @@ export function blogPostingJsonLd(post: Post, ogImage: string): JsonLd {
     image: ogImage,
     keywords: post.tags.length > 0 ? post.tags.join(", ") : undefined,
     articleSection: post.category,
+  };
+}
+
+/**
+ * 케이스 스터디는 `BlogPosting` 이 아니라 `CreativeWork` 다.
+ * 블로그 글이 아니라 "만든 것"에 대한 서술이므로 타입을 구분한다 (docs/PORTFOLIO.md §6-3).
+ */
+export function creativeWorkJsonLd(work: Work, ogImage: string): JsonLd {
+  const url = workUrl(work.locale, work.slug);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: work.title,
+    headline: work.title,
+    description: work.description,
+    abstract: work.summary,
+    datePublished: work.date,
+    dateModified: work.updated ?? work.date,
+    inLanguage: work.locale === "ko" ? "ko-KR" : "en-US",
+    author: person(),
+    creator: person(),
+    mainEntityOfPage: { "@type": "WebPage", "@id": work.canonical ?? url },
+    url,
+    image: ogImage,
+    keywords: work.tags.length > 0 ? work.tags.join(", ") : undefined,
+    /** 사용 기술을 기계가 읽을 수 있게 노출한다. */
+    about: work.stack.map((name) => ({ "@type": "Thing", name })),
   };
 }
 

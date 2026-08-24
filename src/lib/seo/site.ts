@@ -32,6 +32,7 @@ export const AUTHOR = {
   name: "지니",
   nameEn: "Jiny",
   url: SITE_URL,
+  github: "https://github.com/lunashp",
 } as const;
 
 export const SITE_NAME: Record<Locale, string> = {
@@ -54,6 +55,9 @@ export const absoluteUrl = (path: string): string =>
 
 export const postUrl = (locale: Locale, slug: string): string =>
   absoluteUrl(`/${locale}/posts/${slug}`);
+
+export const workUrl = (locale: Locale, slug: string): string =>
+  absoluteUrl(`/${locale}/work/${slug}`);
 
 /** AI 크롤러가 HTML 크롬 없이 본문만 가져가는 경로 (docs/SEO-GEO.md §5-1) */
 export const postMarkdownUrl = (locale: Locale, slug: string): string =>

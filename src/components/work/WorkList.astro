@@ -1,0 +1,210 @@
+---
+import {
+  LOCALES,
+  getAvailableWorkLocales,
+  type Locale,
+  type WorkSummary,
+} from "@/lib/content";
+import { getMessages, localeHref } from "@/lib/i18n";
+
+/**
+ * 케이스 목록 — 에디토리얼 데이트라인 리스트.
+ *
+ * ★ 카드 그리드를 쓰지 않는다 (CLAUDE.md "하지 말 것"). 카드 3장을 나란히 놓는 순간
+ *   기본 템플릿처럼 보이고, 케이스마다 다른 무게를 표현할 수 없다.
+ *   글 목록과 같은 괘선 리스트를 쓰되 왼쪽 컬럼이 날짜가 아니라 **기간**이다 —
+ *   케이스에서 독자가 먼저 보는 정보는 발행일이 아니라 얼마나 오래 한 일인가다.
+ */
+
+interface Props {
+  locale: Locale;
+  works: WorkSummary[];
+}
+
+const { locale, works } = Astro.props;
+const m = getMessages(locale);
+
+// 번역 존재 여부를 미리 해결해 둔다 (템플릿에서 await 를 반복하지 않도록).
+const availability = new Map<string, Locale[]>();
+for (const work of works) {
+  availability.set(work.slug, await getAvailableWorkLocales(work.slug));
+}
+---
+
+{
+  works.length === 0 ? (
+    <p class="empty">{m.work.empty}</p>
+  ) : (
+    <ul class="list">
+      {works.map((work) => (
+        <li class="item">
+          <a href={localeHref(locale, `/work/${work.slug}`)} class="link">
+            <span class="period">{work.period}</span>
+
+            <div class="body">
+              <div class="topline">
+                <span class="eyebrow">{work.role}</span>
+                {work.draft && <span class="draft">{m.post.draftBadge}</span>}
+              </div>
+
+              <h3 class="title">{work.title}</h3>
+              <p class="description">{work.description}</p>
+
+              <p class="stack">
+                {work.stack.slice(0, 6).map((tech) => (
+                  <span>{tech}</span>
+                ))}
+              </p>
+            </div>
+
+            {/* 번역 존재 여부. 없는 언어는 취소선으로 구분한다 (대비 기준). */}
+            <span class="locales" aria-hidden="true">
+              {LOCALES.map((l) => (
+                <span data-has={availability.get(work.slug)?.includes(l)}>{l}</span>
+              ))}
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+<style>
+  .empty {
+    color: var(--color-ink-muted);
+    font-size: var(--text-lede);
+  }
+
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 58rem;
+  }
+
+  .item {
+    border-block-end: 1px solid var(--color-rule);
+  }
+
+  .item:first-child {
+    border-block-start: 1px solid var(--color-rule-strong);
+  }
+
+  /* 행 전체가 클릭 대상. 카드도 그림자도 없다 — 괘선 하나로 구분한다. */
+  .link {
+    display: grid;
+    grid-template-columns: 9.5rem 1fr auto;
+    gap: 0 1.5rem;
+    align-items: start;
+    padding: 1.75rem 0.75rem 1.75rem 0;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color var(--duration-fast) ease;
+  }
+
+  .link:hover {
+    background: var(--color-surface);
+  }
+
+  .period {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-ink-faint);
+    font-variant-numeric: tabular-nums;
+    padding-block-start: 0.35rem;
+    white-space: nowrap;
+  }
+
+  .body {
+    min-width: 0;
+  }
+
+  .topline {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-block-end: 0.4rem;
+  }
+
+  .draft {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-signal-note);
+    border: 1px solid currentColor;
+    border-radius: var(--radius-sm);
+    padding: 0 0.35em;
+  }
+
+  .title {
+    margin: 0;
+    font-size: var(--text-h3);
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    transition: color var(--duration-fast) ease;
+  }
+
+  .link:hover .title {
+    color: var(--color-signal-resolved);
+  }
+
+  .description {
+    margin: 0.5rem 0 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--color-ink-muted);
+    max-width: 52ch;
+    text-wrap: pretty;
+  }
+
+  .stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0.8rem 0 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-ink-faint);
+  }
+
+  .locales {
+    display: flex;
+    gap: 0.35rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    letter-spacing: 0.06em;
+    padding-block-start: 0.35rem;
+    color: var(--color-ink-faint);
+  }
+
+  /* 번역 유무는 정보다 — opacity 로 흐리면 대비가 AA 를 못 넘긴다. 취소선으로 구분. */
+  .locales span[data-has="false"] {
+    color: var(--color-ink-faint);
+    text-decoration: line-through;
+  }
+
+  .locales span[data-has="true"] {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  @media (max-width: 720px) {
+    .link {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      padding-inline-end: 0;
+    }
+
+    .period {
+      padding-block-start: 0;
+    }
+
+    .locales {
+      padding-block-start: 0.5rem;
+    }
+  }
+</style>

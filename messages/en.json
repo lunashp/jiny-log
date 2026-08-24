@@ -8,7 +8,26 @@
     "home": "Home",
     "posts": "Writing",
     "mainLabel": "Main navigation",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "work": "Work",
+    "about": "About"
+  },
+  "work": {
+    "title": "Case Studies",
+    "lede": "Not what I built, but what went wrong and how I decided.",
+    "empty": "No case studies in this language yet.",
+    "role": "Role",
+    "period": "Period",
+    "stack": "Stack",
+    "links": "Links",
+    "backToList": "Back to case studies"
+  },
+  "about": {
+    "title": "About",
+    "careerHeading": "Career",
+    "resumeNote": "The full resume is shared individually on application.",
+    "siteHeading": "About this site",
+    "otherWorkHeading": "Other work"
   },
   "post": {
     "publishedOn": "Published",

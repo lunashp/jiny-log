@@ -1,0 +1,264 @@
+---
+import Aside from "@/components/mdx/Aside.astro";
+import Callout from "@/components/mdx/Callout.astro";
+import CodeEnhancer from "@/components/mdx/CodeEnhancer.astro";
+import Details from "@/components/mdx/Details.astro";
+import Figure from "@/components/mdx/Figure.astro";
+import CoverImage from "@/components/post/CoverImage.astro";
+import TableOfContents from "@/components/post/TableOfContents.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  getAllFullWorks,
+  getAvailableWorkLocales,
+  renderWork,
+  type Locale,
+} from "@/lib/content";
+import { getMessages, localeHref } from "@/lib/i18n";
+import { buildWorkHreflang } from "@/lib/seo/hreflang";
+import {
+  breadcrumbJsonLd,
+  creativeWorkJsonLd,
+  serializeJsonLd,
+} from "@/lib/seo/json-ld";
+import { absoluteUrl, ogImageUrl, workUrl } from "@/lib/seo/site";
+
+export async function getStaticPaths() {
+  const works = await getAllFullWorks();
+
+  return works.map((work) => ({
+    params: { locale: work.locale, slug: work.slug },
+    props: { work },
+  }));
+}
+
+const { work } = Astro.props;
+const locale = work.locale as Locale;
+const m = getMessages(locale);
+
+const { Content } = await renderWork(work);
+
+const [available, languages] = await Promise.all([
+  getAvailableWorkLocales(work.slug),
+  buildWorkHreflang(work.slug),
+]);
+
+const canonical = work.canonical ?? workUrl(locale, work.slug);
+const ogImage = ogImageUrl(locale, work.slug);
+
+const jsonLd = serializeJsonLd([
+  creativeWorkJsonLd(work, ogImage),
+  breadcrumbJsonLd([
+    { name: m.nav.home, url: absoluteUrl(`/${locale}`) },
+    { name: m.work.title, url: absoluteUrl(`/${locale}/work`) },
+    { name: work.title, url: workUrl(locale, work.slug) },
+  ]),
+]);
+
+const otherLocale = available.find((l) => l !== locale);
+const components = { Callout, Figure, Aside, Details };
+---
+
+<BaseLayout
+  locale={locale}
+  title={work.title}
+  description={work.description}
+  canonical={canonical}
+  languages={languages}
+  ogType="article"
+  ogImage={ogImage}
+  publishedTime={work.date}
+  modifiedTime={work.updated ?? work.date}
+  jsonLd={jsonLd}
+>
+  <article class="article">
+    <header class="header">
+      <p class="eyebrow">{work.role}</p>
+      <h1 class="post-title title reveal">{work.title}</h1>
+
+      {
+        otherLocale && (
+          <a class="locale-switch" href={localeHref(otherLocale, `/work/${work.slug}`)}>
+            {m.locale.switchTo}
+          </a>
+        )
+      }
+    </header>
+
+    <div class="grid">
+      <div class="meta-column">
+        {/*
+          케이스의 사실 블록. 본문을 읽기 전에 "언제, 무엇으로, 어떤 역할로"가
+          한눈에 잡혀야 한다 — 채용 담당자는 본문을 끝까지 읽지 않는다.
+        */}
+        <dl class="facts">
+          <dt>{m.work.period}</dt>
+          <dd>{work.period}</dd>
+
+          <dt>{m.work.role}</dt>
+          <dd>{work.role}</dd>
+
+          <dt>{m.work.stack}</dt>
+          <dd class="stack">
+            {work.stack.map((tech) => <span>{tech}</span>)}
+          </dd>
+
+          {
+            work.links.length > 0 && (
+              <>
+                <dt>{m.work.links}</dt>
+                <dd class="links">
+                  {work.links.map((link) => (
+                    <a href={link.url} rel="noopener noreferrer" target="_blank">
+                      {link.label}
+                    </a>
+                  ))}
+                </dd>
+              </>
+            )
+          }
+        </dl>
+      </div>
+
+      <div class="content">
+        {work.cover && <CoverImage cover={work.cover} priority />}
+
+        {/* ★ 시그니처: 해답 블록 (docs/DESIGN.md §2) */}
+        {work.summary && <p class="answer-block reveal-delayed">{work.summary}</p>}
+
+        <div class="prose">
+          <Content components={components} />
+        </div>
+
+        <footer class="footer">
+          <a href={localeHref(locale, "/work")} class="back-link">
+            ← {m.work.backToList}
+          </a>
+        </footer>
+      </div>
+
+      <div class="toc-column">
+        <TableOfContents headings={work.headings} locale={locale} />
+      </div>
+    </div>
+  </article>
+
+  <CodeEnhancer copyLabel={m.post.copyCode} copiedLabel={m.post.copied} />
+</BaseLayout>
+
+<style>
+  .article {
+    max-width: 74rem;
+    margin-inline: auto;
+    padding: clamp(2.5rem, 1.5rem + 5vw, 5rem) var(--space-page) 0;
+  }
+
+  .header {
+    margin-block-end: clamp(2rem, 1rem + 4vw, 3.5rem);
+  }
+
+  .eyebrow {
+    margin: 0 0 0.9rem;
+  }
+
+  .title {
+    margin: 0;
+  }
+
+  .locale-switch {
+    display: inline-block;
+    margin-block-start: 1rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-ink-muted);
+  }
+
+  /* 에디토리얼 3단 그리드: 사실 블록 | 본문 | 목차 */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .meta-column,
+  .toc-column {
+    min-width: 0;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.4rem 1rem;
+    margin: 0 0 2rem;
+    padding-block-end: 1.25rem;
+    border-block-end: 1px solid var(--color-rule);
+    font-size: var(--text-meta);
+  }
+
+  .facts dt {
+    font-family: var(--font-mono);
+    letter-spacing: 0.06em;
+    color: var(--color-ink-faint);
+    white-space: nowrap;
+  }
+
+  .facts dd {
+    margin: 0;
+    color: var(--color-ink-muted);
+  }
+
+  .stack,
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.9rem;
+  }
+
+  .links a {
+    color: var(--color-signal-resolved);
+  }
+
+  .content {
+    min-width: 0;
+  }
+
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    justify-content: space-between;
+    margin-block-start: var(--space-section);
+    padding-block-start: 1.5rem;
+    border-block-start: 1px solid var(--color-rule);
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+  }
+
+  .back-link {
+    color: var(--color-ink-muted);
+  }
+
+  @media (min-width: 60rem) {
+    .grid {
+      grid-template-columns: 14rem minmax(0, 42rem) 14rem;
+      gap: 2.5rem;
+    }
+
+    .facts {
+      position: sticky;
+      top: 5rem;
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
+      border-block-end: none;
+      padding-block-end: 0;
+    }
+
+    .facts dt {
+      margin-block-start: 0.9rem;
+    }
+
+    .facts dt:first-child {
+      margin-block-start: 0;
+    }
+  }
+</style>

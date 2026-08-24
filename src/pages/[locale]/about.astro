@@ -1,0 +1,200 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getAbout } from "@/lib/about";
+import { LOCALES, type Locale } from "@/lib/content";
+import { getMessages } from "@/lib/i18n";
+import { buildStaticHreflang } from "@/lib/seo/hreflang";
+import { AUTHOR, absoluteUrl } from "@/lib/seo/site";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const m = getMessages(locale);
+const about = getAbout(locale);
+---
+
+<BaseLayout
+  locale={locale}
+  title={m.about.title}
+  description={about.lede}
+  canonical={absoluteUrl(`/${locale}/about`)}
+  languages={buildStaticHreflang("/about", LOCALES)}
+>
+  <div class="page">
+    <header class="header">
+      <h1 class="post-title title reveal">{m.about.title}</h1>
+      <p class="lede reveal-delayed">{about.lede}</p>
+    </header>
+
+    <div class="body">
+      <section class="block">
+        {about.paragraphs.map((text) => <p class="prose-p">{text}</p>)}
+      </section>
+
+      <section class="block" aria-labelledby="career">
+        <h2 id="career" class="heading">{m.about.careerHeading}</h2>
+        <ul class="career">
+          {
+            about.career.map((row) => (
+              <li class="career-item">
+                <span class="career-period">{row.period}</span>
+                <div>
+                  <p class="career-company">
+                    {row.company}
+                    <span class="career-role">{row.role}</span>
+                  </p>
+                  <p class="career-summary">{row.summary}</p>
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="note">{m.about.resumeNote}</p>
+      </section>
+
+      <section class="block" aria-labelledby="other-work">
+        <h2 id="other-work" class="heading">{m.about.otherWorkHeading}</h2>
+        {
+          about.otherWork.map((item) => (
+            <div class="other">
+              <h3 class="other-name">{item.name}</h3>
+              <p class="prose-p">{item.summary}</p>
+            </div>
+          ))
+        }
+      </section>
+
+      <section class="block" aria-labelledby="this-site">
+        <h2 id="this-site" class="heading">{m.about.siteHeading}</h2>
+        {about.site.map((text) => <p class="prose-p">{text}</p>)}
+        <p class="note">
+          <a href={AUTHOR.github} rel="noopener noreferrer" target="_blank">GitHub</a>
+        </p>
+      </section>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    max-width: 74rem;
+    margin-inline: auto;
+    padding: clamp(2.5rem, 1.5rem + 5vw, 5rem) var(--space-page) 0;
+  }
+
+  .header {
+    margin-block-end: clamp(2rem, 1rem + 4vw, 3.5rem);
+  }
+
+  .title {
+    margin: 0;
+  }
+
+  .lede {
+    margin: 1rem 0 0;
+    max-width: 46ch;
+  }
+
+  .body {
+    max-width: 42rem;
+  }
+
+  .block + .block {
+    margin-block-start: var(--space-section);
+  }
+
+  .heading {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+    margin: 0 0 1.25rem;
+    padding-block-end: 0.5rem;
+    border-block-end: 1px solid var(--color-rule-strong);
+  }
+
+  .prose-p {
+    margin: 0 0 1.1rem;
+    line-height: 1.75;
+    color: var(--color-ink-muted);
+    text-wrap: pretty;
+  }
+
+  .career {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .career-item {
+    display: grid;
+    grid-template-columns: 10.5rem 1fr;
+    gap: 0 1.5rem;
+    padding-block: 1rem;
+    border-block-end: 1px solid var(--color-rule);
+  }
+
+  .career-period {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-ink-faint);
+    font-variant-numeric: tabular-nums;
+    padding-block-start: 0.2rem;
+  }
+
+  .career-company {
+    margin: 0;
+    font-weight: 700;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .career-role {
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    font-weight: 400;
+    color: var(--color-ink-faint);
+  }
+
+  .career-summary {
+    margin: 0.35rem 0 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--color-ink-muted);
+  }
+
+  .other + .other {
+    margin-block-start: 1.75rem;
+  }
+
+  .other-name {
+    margin: 0 0 0.5rem;
+    font-size: var(--text-h3);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .note {
+    margin: 1.5rem 0 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta);
+    color: var(--color-ink-faint);
+  }
+
+  @media (max-width: 640px) {
+    .career-item {
+      grid-template-columns: 1fr;
+      gap: 0.4rem;
+    }
+
+    .career-period {
+      padding-block-start: 0;
+    }
+  }
+</style>

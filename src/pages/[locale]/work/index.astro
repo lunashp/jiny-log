@@ -1,0 +1,54 @@
+---
+import WorkList from "@/components/work/WorkList.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { LOCALES, getWorks, type Locale } from "@/lib/content";
+import { getMessages } from "@/lib/i18n";
+import { buildStaticHreflang } from "@/lib/seo/hreflang";
+import { absoluteUrl } from "@/lib/seo/site";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const m = getMessages(locale);
+const works = await getWorks(locale);
+---
+
+<BaseLayout
+  locale={locale}
+  title={m.work.title}
+  description={m.work.lede}
+  canonical={absoluteUrl(`/${locale}/work`)}
+  languages={buildStaticHreflang("/work", LOCALES)}
+>
+  <div class="page">
+    <header class="header">
+      <h1 class="post-title title reveal">{m.work.title}</h1>
+      <p class="lede reveal-delayed">{m.work.lede}</p>
+    </header>
+
+    <WorkList locale={locale} works={works} />
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    max-width: 74rem;
+    margin-inline: auto;
+    padding: clamp(2.5rem, 1.5rem + 5vw, 5rem) var(--space-page) 0;
+  }
+
+  .header {
+    margin-block-end: clamp(2rem, 1rem + 4vw, 3.5rem);
+  }
+
+  .title {
+    margin: 0;
+  }
+
+  .lede {
+    margin: 1rem 0 0;
+    max-width: 46ch;
+  }
+</style>

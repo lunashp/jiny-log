@@ -1,5 +1,10 @@
-import { DEFAULT_LOCALE, getAvailableLocales, type Locale } from "@/lib/content";
-import { absoluteUrl, postUrl } from "./site";
+import {
+  DEFAULT_LOCALE,
+  getAvailableLocales,
+  getAvailableWorkLocales,
+  type Locale,
+} from "@/lib/content";
+import { absoluteUrl, postUrl, workUrl } from "./site";
 
 /**
  * hreflang 맵 — ★ 실제 존재하는 번역만 포함한다.
@@ -19,6 +24,27 @@ export async function buildPostHreflang(slug: string): Promise<Record<string, st
 
   if (available.includes(DEFAULT_LOCALE)) {
     languages["x-default"] = postUrl(DEFAULT_LOCALE, slug);
+  }
+
+  return languages;
+}
+
+/**
+ * 케이스 스터디용 hreflang.
+ *
+ * 글용 `buildPostHreflang` 을 재사용하지 않는다 — 다른 컬렉션을 조회해야 하고,
+ * 잘못 쓰면 없는 글을 찾아 hreflang 이 조용히 비어버린다 (docs/PORTFOLIO.md §6-3).
+ */
+export async function buildWorkHreflang(slug: string): Promise<Record<string, string>> {
+  const available = await getAvailableWorkLocales(slug);
+  const languages: Record<string, string> = {};
+
+  for (const locale of available) {
+    languages[locale] = workUrl(locale, slug);
+  }
+
+  if (available.includes(DEFAULT_LOCALE)) {
+    languages["x-default"] = workUrl(DEFAULT_LOCALE, slug);
   }
 
   return languages;
