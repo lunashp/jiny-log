@@ -1,0 +1,43 @@
+---
+title: "react-query: Type 'string[]' has no properties in common with type 'InvalidateQueryFilters'"
+description: "invalidateQueries에 쿼리 키 배열을 그대로 넘기면 ts(2559) 타입 에러가 난다. v5에서 인자 형태가 객체로 바뀌었기 때문이며, queryKey 속성을 가진 객체로 감싸면 해결된다."
+summary: "TanStack Query v5부터 invalidateQueries는 배열이 아니라 InvalidateQueryFilters 객체를 받는다. invalidateQueries(['todos'])를 invalidateQueries({ queryKey: ['todos'] })로 바꾸면 된다. 같은 변경이 removeQueries·refetchQueries 등 다른 필터 계열 메서드에도 적용된다."
+date: "2024-09-09"
+draft: false
+tags: ["react-query", "tanstack-query", "typescript", "troubleshooting"]
+category: "troubleshooting"
+---
+
+프로젝트에서 react-query 를 사용하려고 하는데 다음과 같은 에러가 났다.
+![VS Code에서 queryClient.invalidateQueries(["guestbook"]) 인자에 빨간 밑줄이 그려지고, 호버 툴팁에 Type 'string[]' has no properties in common with type 'InvalidateQueryFilters'. ts(2559) 가 표시된 화면](/images/react-query-invalidate-queries-type-error/01.png)
+
+뭐여... 하고 알아보니 query key 를 넣는 옵션이 아래와 같이 바뀌었던 것
+```typescript
+queryClient.invalidateQueries({ queryKey: ['todos'] })
+```
+
+해당 부분만 바꿔주니 잘 되었다.
+```typescript
+// 방명록 생성
+export const useCreateGuestBook = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ["createGuestbook"],
+    mutationFn: async (newEntry: guestbookType) => {
+      const docRef = await addDoc(collection(db, "guestbook"), newEntry);
+      return { id: docRef.id, ...newEntry };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["guestbooklist"],
+      });
+    },
+  });
+};
+```
+
+
+---
+참고
+- https://tanstack.com/query/latest/docs/framework/react/guides/query-invalidation
+- https://velog.io/@innes_kwak/2024.03.07-TIL-%ED%8A%B8%EB%9F%AC%EB%B8%94%EC%8A%88%ED%8C%85tanstack-query-typescript

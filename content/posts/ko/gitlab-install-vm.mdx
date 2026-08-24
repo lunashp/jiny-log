@@ -1,0 +1,135 @@
+---
+title: "VM에 GitLab 설치하고 root 비밀번호 재설정하기"
+description: "Ubuntu VM에 gitlab-ee를 설치하고 external_url을 설정해 접속하기까지의 과정, 그리고 initial_root_password 파일이 24시간 뒤 삭제된 상황에서 gitlab-rails console로 root 비밀번호를 재설정하는 방법을 정리한다."
+summary: "gitlab.rb의 external_url을 실제 접속 주소로 바꾸고 gitlab-ctl reconfigure를 돌려야 접속이 된다. root 초기 비밀번호는 /etc/gitlab/initial_root_password에 있지만 첫 reconfigure 후 24시간이 지나면 자동 삭제된다. 그 뒤에는 sudo gitlab-rails console에서 User.find_by_username('root')로 계정을 찾아 password와 password_confirmation을 함께 지정하고 save!가 true를 반환하는지 확인한다."
+date: "2025-04-15"
+draft: false
+tags: ["gitlab", "ubuntu", "ufw", "devops", "gitlab-rails"]
+category: "note"
+series: "devops-pipeline"
+---
+
+## GitLab 설치
+
+### 방화벽 설정
+
+```bash
+sudo ufw status
+
+sudo ufw enable
+
+sudo ufw status
+
+sudo ufw allow 80
+
+sudo ufw status   
+```
+
+### GitLab dependencies 패키지 설치
+
+```bash
+sudo apt update
+
+sudo apt upgrade -y
+
+sudo apt install -y curl openssh-server ca-certificates tzdata perl
+```
+
+### GitLab 패키지 레포 추가 및 설치
+
+레포추가
+
+```bash
+curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | sudo bash\
+```
+
+gitlab 설치
+
+```bash
+sudo apt install gitlab-ee
+```
+![Ubuntu에서 sudo apt install gitlab-ee를 실행한 터미널 출력. gitlab-ee 17.10.1 설치가 끝나고 external_url을 설정하라는 안내 메시지가 출력되어 있다](/images/gitlab-install-vm/01.png)
+
+### Gitlab 환경파일 수정
+
+```bash
+sudo vim /etc/gitlab/gitlab.rb
+
+## 아래 항목 수정
+external_url 'http://VM_HOST:80'
+```
+
+### Gitlab 환경 파일 적용 및 상태 확인
+
+gitlab 변경 파일 재구성 및 재기동
+
+```bash
+sudo gitlab-ctl reconfigure
+```
+
+현재 gitlab 상태 확인
+
+```bash
+sudo gitlab-ctl status
+```
+
+### GitLab 접속
+
+root 접속 패스워드 확인
+
+```bash
+sudo cat /etc/gitlab/initial_root_password
+```
+
+```bash
+# WARNING: This value is valid only in the following conditions
+#          1. If provided manually (either via `GITLAB_ROOT_PASSWORD` environment variable or via `gitlab_rails['initial_root_password']` setting in `gitlab.rb`, it was provided before database was seeded for the first time (usually, the first reconfigure run).
+#          2. Password hasn't been changed manually, either via UI or via command line.
+#
+#          If the password shown here doesn't work, you must reset the admin password following https://docs.gitlab.com/ee/security/reset_user_password.html#reset-your-root-password.
+
+Password: REDACTED
+
+# NOTE: This file will be automatically deleted in the first reconfigure run after 24 hours.
+```
+- username: root
+- password: REDACTED
+
+### 로그인 후 화면
+![GitLab에 root로 로그인한 직후의 Welcome to GitLab, Administrator! 온보딩 화면](/images/gitlab-install-vm/02.png)
+
+### root 비밀번호 재설정
+
+GitLab 콘솔 진입
+
+```bash
+sudo gitlab-rails console
+```
+
+콘솔에서 아래 명령어 입력
+
+```bash
+user = User.find_by_username('root')
+user.password = 'REDACTED'
+user.password_confirmation = 'REDACTED'
+user.save!
+```
+
+저장 확인 메시지가 `=> true` 인 것 확인
+
+```bash
+exit
+```
+![sudo gitlab-rails console에서 User.find_by_username('root')로 root 계정을 찾아 비밀번호를 재설정하고 user.save!가 true를 반환한 터미널 출력. 비밀번호 값은 블러 처리되어 있다](/images/gitlab-install-vm/03.png)
+
+
+#### 계정 추가 및 비밀번호 설정
+
+계정 추가
+- Admin area > New User
+- Account 정보 입력 후 `Create user` 클릭
+
+
+계정 비밀번호 설정
+- Admin area > Users > `${계정이름}` > Edit
+- Password 란에 비빌번호 입력 후 `Save changes` 클릭

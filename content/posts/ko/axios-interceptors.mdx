@@ -1,0 +1,115 @@
+---
+title: "axios interceptors로 JWT 인증과 공통 에러 처리를 한곳에 모으기"
+description: "axios의 request/response interceptor가 then·catch보다 먼저 끼어드는 지점을 이용해 Authorization 헤더 주입과 401·5xx 공통 처리를 한곳에 모은 baseQuery 구성을 정리한다. 인증이 필요한 인스턴스와 불필요한 인스턴스를 분리하는 이유도 함께 다룬다."
+summary: "interceptor는 then/catch로 넘어가기 전에 요청과 응답을 가로챈다. request interceptor에서 localStorage의 access token을 Authorization 헤더에 붙이고, response interceptor에서 status가 401이면 토큰을 지우고 5xx면 공통 안내를 띄우면 호출부마다 같은 에러 처리를 반복하지 않아도 된다. 인증이 필요 없는 요청은 별도 인스턴스로 분리해야 토큰이 없을 때 불필요하게 실패하지 않는다."
+date: "2024-12-30"
+draft: false
+tags: ["axios", "jwt", "nextjs", "typescript", "authentication"]
+category: "note"
+---
+
+프로젝트를 진행하면서 인증 관련 처리를 하던 중 헷갈리는 `interceptors` 개념에 대해서 알아보았다.
+
+## interceptors
+then 또는 catch로 처리되기 전에 요청과 응답을 가로챌수 있다.
+```bash
+// 요청 인터셉터 추가하기
+axios.interceptors.request.use(function (config) {
+    // 요청이 전달되기 전에 작업 수행
+    return config;
+  }, function (error) {
+    // 요청 오류가 있는 작업 수행
+    return Promise.reject(error);
+  });
+
+// 응답 인터셉터 추가하기
+axios.interceptors.response.use(function (response) {
+    // 2xx 범위에 있는 상태 코드는 이 함수를 트리거 합니다.
+    // 응답 데이터가 있는 작업 수행
+    return response;
+  }, function (error) {
+    // 2xx 외의 범위에 있는 상태 코드는 이 함수를 트리거 합니다.
+    // 응답 오류가 있는 작업 수행
+    return Promise.reject(error);
+  });
+```
+
+## 프로젝트에 적용
+jwt + localstorage 로 인증 처리중이며 아래는 `baseQuery.ts` 파일이다.
+```ts
+import { useRouter } from 'next/navigation'
+import axios from 'axios'
+import { API_BASE_URL } from '../config/env'
+
+export const axiosInstance = axios.create({
+  baseURL: `${API_BASE_URL}`,
+})
+
+// 인증이 불필요할 때
+export const publicQuery = axios.create({
+  baseURL: `${API_BASE_URL}`,
+})
+
+axiosInstance.interceptors.request.use(async (config) => {
+  if (!config.headers) return config
+
+  const accessToken =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('project_name_token')
+      : null
+  if (!accessToken) throw new Error('No accessToken')
+
+  if (accessToken) {
+    config.headers['Authorization'] = `Bearer ${accessToken}`
+  }
+
+  return config
+})
+
+// Response interceptor
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response.data
+  },
+
+  (error) => {
+    // Handle global errors (e.g., unauthorized, server errors)
+    if (axios.isAxiosError(error)) {
+      if (error.response && error.response.status >= 500) {
+        // TODO : 에러 페이지로 이동하도록 처리
+        alert('알 수 없는 오류가 발생했어요. 잠시 후 다시 시도해주세요.')
+      }
+
+      if (error.response && error.response.status === 401) {
+        alert('세션이 만료되었습니다. 다시 로그인해주세요.')
+        localStorage.removeItem('project_name_user')
+        localStorage.removeItem('project_name_token')
+      }
+
+      throw error
+    }
+
+    throw new Error('API 요청 실패')
+  }
+)
+
+publicQuery.interceptors.response.use(
+  (response) => {
+    return response.data // 동일한 응답 처리
+  },
+  (error) => {
+    console.error('Public API 요청 실패:', error)
+    throw error // 필요한 경우, 비인증 요청도 오류 처리 추가
+  }
+)
+
+export const baseQuery = axiosInstance
+```
+
+## 개선 필요 사항
+현재는 세션이 만료되었을 때(401 에러 발생 시) baseQuery 에서 localStorage를 지우고 AuthProvider에서 localStorage에 item이 없으면 /login 페이지로 가는 방식으로 구현해두었는데 잘 동작하지 않는 것 같아서 세션 만료 시에 어떻게 구현하면 좋을 지 고민이다.
+
+
+---
+참고 자료
+https://axios-http.com/kr/docs/interceptors

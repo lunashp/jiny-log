@@ -1,0 +1,210 @@
+---
+title: "Ubuntu에 Jenkins 설치하기 — 포트 변경과 journald 로그 확인"
+description: "Ubuntu에 OpenJDK 21과 Jenkins를 설치하고 기본 포트를 8080에서 바꾸는 방법, 그리고 Jenkins 로그가 파일로 남지 않는 이유와 journalctl로 확인하는 방법을 정리한다."
+summary: "Jenkins 포트는 /lib/systemd/system/jenkins.service의 JENKINS_PORT 환경변수를 고치고 daemon-reload 해야 적용된다. Jenkins는 systemd journal에 바이너리로 로그를 쓰기 때문에 /var/log/jenkins/jenkins.log 같은 파일이 생기지 않는다 — 로그는 journalctl -u jenkins로 봐야 하고, 파일로 남기려면 journalctl 출력을 리다이렉트하거나 cron으로 덤프해야 한다."
+date: "2025-04-15"
+draft: false
+tags: ["jenkins", "ubuntu", "openjdk", "systemd", "devops", "journald"]
+category: "note"
+series: "devops-pipeline"
+---
+
+---
+
+- Jenkins v2.479.3
+    - https://www.jenkins.io/doc/book/installing/linux/#debianubuntu
+
+---
+
+## **Java 설치**
+
+openjdk 설치
+
+```bash
+sudo apt update
+sudo apt install openjdk-21-jdk -y
+```
+
+설치 확인
+
+```bash
+java -version
+openjdk version "21.0.6" 2025-01-21
+OpenJDK Runtime Environment (build 21.0.6+7-Ubuntu-122.04.1)
+OpenJDK 64-Bit Server VM (build 21.0.6+7-Ubuntu-122.04.1, mixed mode, sharing)
+```
+
+---
+
+## **Jenkins 설치**
+
+패키지 키 추가
+
+```bash
+sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+  
+--2025-03-05 18:09:33--  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+Resolving pkg.jenkins.io (pkg.jenkins.io)... 151.101.2.133, 151.101.66.133, 151.101.130.133, ...
+Connecting to pkg.jenkins.io (pkg.jenkins.io)|151.101.2.133|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 3175 (3.1K) [application/pgp-keys]
+Saving to: ‘/usr/share/keyrings/jenkins-keyring.asc’
+
+/usr/share/keyrings/jenkins-k 100%[==============================================>]   3.10K  --.-KB/s    in 0s      
+
+2025-03-05 18:09:34 (12.2 MB/s) - ‘/usr/share/keyrings/jenkins-keyring.asc’ saved [3175/3175]
+```
+
+저장소 추가
+
+```bash
+echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc]" \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+```
+
+설치
+
+```bash
+sudo apt update
+sudo apt install jenkins -y
+```
+
+## 포트 설정 변경
+
+```bash
+sudo vim /lib/systemd/system/jenkins.service
+
+# Port to listen on for HTTP requests. Set to -1 to disable.
+# To be able to listen on privileged ports (port numbers less than 1024),
+# add the CAP_NET_BIND_SERVICE capability to the AmbientCapabilities
+# directive below.
+Environment="JENKINS_PORT=9000"
+```
+
+```bash
+sudo systemctl daemon-reload
+```
+
+## 방화벽 설정
+
+```bash
+sudo ufw status
+sudo ufw allow 9000/tcp
+sudo ufw reload
+```
+
+## **Jenkins 실행**
+
+서비스 실행
+
+```bash
+sudo systemctl status jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+```
+
+초기 비밀번호 확인
+
+```bash
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+REDACTED
+```
+
+대시보드 접속
+
+- http://VM_HOST:9000
+
+## 계정
+
+- jenkins
+
+---
+
+## VM 재기동 시(ip 변경 시)
+
+**Dashboard** **** **Jenkins** 관리 **** **System**
+
+Jenkins URL 확인 후 ip 변경
+![Jenkins 관리 > System의 Jenkins Location 섹션. Jenkins URL 입력란의 값은 블러 처리되어 있고 System Admin e-mail address는 미설정 상태다](/images/jenkins-install-ubuntu/01.png)
+
+
+---
+
+### 로그 확인 방법
+
+> Jenkins가 systemd의 **journal logging** 방식을 사용하도록 설정되어 있음
+>
+
+로그 출력
+
+```bash
+sudo journalctl -u jenkins --no-pager --lines=50
+```
+
+---
+## journald 로그 저장 방식
+
+- journald는 로그를 **RAM(휘발성) 또는 디스크(비휘발성)에 바이너리 형식으로 저장**함.
+- 기본 저장 경로
+    - **휘발성(메모리 기반, 시스템 재부팅 시 로그 삭제됨):** `/run/log/journal/`
+    - **비휘발성(디스크 기반, 시스템 재부팅 후에도 로그 유지됨):** `/var/log/journal/`
+
+**로그가 `/var/log/jenkins/jenkins.log` 같은 파일로 남지 않는 이유**
+
+- journald는 JSON 기반 바이너리 형식으로 로그를 저장하며, **직접 텍스트 파일을 생성하지 않음.**
+- 로그를 확인하려면 `journalctl` 명령어를 사용해야 함
+
+## journald 로그를 파일로 저장하는 방법
+
+### 1.  journald 설정을 디스크 기반으로 변경 (재부팅 후에도 유지)
+
+만약 `/var/log/journal/` 디렉토리가 없거나, 휘발성 저장소(`/run/log/journal/`)만 사용 중이라면 디스크 기반 로그를 활성화할 수 있음
+
+```bash
+sudo mkdir -p /var/log/journal
+sudo systemctl restart systemd-journald
+```
+
+```bash
+journalctl --disk-usage
+```
+
+> Archived and active journals take up X MB.
+>
+>
+> (디스크 기반으로 저장되고 있다면 이렇게 표시됨)
+>
+
+---
+
+### 2-1. Jenkins 로그를 특정 파일로 저장
+
+journald 자체적으로 특정 서비스의 로그를 **일반 파일로 저장**하는 기능은 없지만, `journalctl`을 이용해 파일로 변환할 수 있음
+
+### 2-2.실시간으로 로그를 파일에 저장
+
+```bash
+sudo journalctl -u jenkins -f >> /var/log/jenkins/jenkins.log &
+```
+
+- `f` 옵션은 실시간 로그 스트리밍
+- `&` 를 붙이면 백그라운드에서 실행됨
+
+---
+
+### 3. 로그를 정기적으로 파일로 저장 (cronjob 활용)
+
+Jenkins 로그를 일정 시간마다 파일로 저장하고 싶다면, `cron`을 활용할 수도 있음
+
+```bash
+sudo crontab -e
+```
+
+그리고 아래 줄 추가 (매 5분마다 로그 저장)
+
+```bash
+*/5 * * * * journalctl -u jenkins --no-pager > /var/log/jenkins/jenkins.log
+```

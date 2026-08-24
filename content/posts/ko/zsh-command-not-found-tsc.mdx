@@ -1,0 +1,23 @@
+---
+title: "zsh: command not found: tsc — TypeScript는 프로젝트마다 설치돼 있어도 전역에는 없다"
+description: "여러 프로젝트에서 TypeScript를 써 왔더라도 tsc 명령은 전역에 없을 수 있다. 프로젝트 로컬 설치와 전역 설치가 다른 이유, 그리고 tsc를 실행 가능하게 만드는 세 가지 방법을 정리한다."
+summary: "tsc는 프로젝트의 devDependencies에 들어 있어도 PATH에는 잡히지 않는다. 전역에서 쓰려면 npm install -g typescript 나 brew install typescript 로 따로 설치해야 하고, 설치 없이 쓰려면 npx tsc 또는 package.json 스크립트로 실행한다. 설치 후 tsc --version 이 버전을 출력하면 tsc --init 으로 tsconfig.json 을 만들 수 있다."
+date: "2024-08-12"
+draft: false
+tags: ["typescript", "zsh", "homebrew", "npm", "troubleshooting"]
+category: "troubleshooting"
+---
+
+이전부터 타입스크립트로 프로젝트를 진행해 왔던 터라 당연히 설치되어 있을 거란 가정하에 진행했으나...
+
+## 1. 믿을 수 없던 command not found
+![터미널에서 npm init -y로 package.json을 만든 뒤 tsc --init 명령을 실행했으나 zsh: command not found: tsc 가 출력된 화면](/images/zsh-command-not-found-tsc/01.png)
+
+![터미널에서 tsc --version 을 실행했으나 zsh: command not found: tsc 가 출력된 화면](/images/zsh-command-not-found-tsc/02.png)
+
+## 2. brew 로 typescript 재설치
+![brew install typescript 실행 출력. Homebrew가 자동 업데이트를 거친 뒤 typescript 5.5.4 매니페스트와 brotli, c-ares, icu4c 등 의존성을 내려받고 있다](/images/zsh-command-not-found-tsc/03.png)
+
+
+## 3. 정상 설치 확인 후 ts 프로젝트 설정
+![설치 후 tsc --version 이 Version 5.5.4 를 출력하고, tsc --init 이 target es2016, module commonjs, outDir ./dist 등의 옵션으로 tsconfig.json 을 생성한 터미널 화면](/images/zsh-command-not-found-tsc/04.png)

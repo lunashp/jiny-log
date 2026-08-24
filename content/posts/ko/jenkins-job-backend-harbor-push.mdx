@@ -1,0 +1,180 @@
+---
+title: "Jenkins Job 3개로 백엔드 이미지를 빌드해 Harbor에 push하기"
+description: "Gradle 빌드, Docker 이미지 빌드, 레지스트리 push를 하나의 Job에 몰지 않고 세 개의 FreeStyle Job으로 쪼개서 연결한 구성을 정리한다. artifact 전달은 Archive the artifacts와 Copy artifacts from another project로 처리한다."
+summary: "build → image → image-push 세 Job으로 나누고 Build other projects로 연결한다. Job 사이의 산출물 전달은 앞 Job에서 Archive the artifacts로 남기고 뒤 Job에서 Copy artifacts from another project로 받는다. Harbor 자격증명은 Job 스크립트에 박지 않고 Use secret text(s) or file(s)로 HARBOR_USERNAME·HARBOR_PASSWORD 환경변수에 바인딩한 뒤 --password-stdin으로 넘긴다."
+date: "2025-04-15"
+draft: false
+tags: ["jenkins", "harbor", "docker", "gradle", "devops", "ci"]
+category: "note"
+series: "devops-pipeline"
+---
+
+## Build Job 생성
+
+Dashboard > `새로운 Item` 클릭
+
+- Enter an item name :: `${project_name}`
+- FreeStyle project
+- `OK` 클릭
+
+## Build Job 설정
+
+### General
+
+- GitLab Connection :: gitlab
+
+### 소스 코드 관리
+
+- Git
+    - Repositories
+        - Repository URL :: `${gitlab_url}`
+        - Credentials :: `${gitlab-user-token}`
+    - Branches to build
+        - Branch Specifier :: */main
+
+![Jenkins luna-backend-build Job의 소스 코드 관리 설정. Repository URL 값은 블러 처리되어 있고 Credentials는 gitlab-user-token, 빌드 브랜치는 */main으로 지정되어 있다](/images/jenkins-job-backend-harbor-push/01.png)
+
+
+### Build Steps
+
+Add Build step > Execute shell
+
+```bash
+#!/bin/bash
+set -e
+
+echo "📦 Gradle 빌드 시작"
+./gradlew clean build -x test
+
+echo "✅ .jar 생성 확인"
+find build/libs -name "*.jar"
+```
+
+### 빌드 후 조치
+
+빌드 후 조치 추가 > Archive the artifacts
+
+- Files to archive :: build/libs/*.jar, Dockerfile
+
+빌드 후 조치 추가 > Build other projects
+
+- Projects to build :: `${next_project_name}`
+- Trigger only if build is stable :: check
+
+![Jenkins 빌드 후 조치 설정. Archive the artifacts에 build/libs/*.jar과 Dockerfile을 지정하고 Build other projects로 luna-backend-image Job을 연결한 상태](/images/jenkins-job-backend-harbor-push/02.png)
+
+
+---
+
+## Image Job 생성
+
+Dashboard > `새로운 Item` 클릭
+
+- Enter an item name :: `${project_name}`
+- FreeStyle project
+- `OK` 클릭
+
+## Build Job 설정
+
+### General
+
+- GitLab Connection :: gitlab
+
+### 소스 코드 관리
+
+- None :: check
+
+### Environment
+
+- Use secret text(s) or file(s) :: check
+    - **Username and password (separated)**
+        - Username Variable :: HARBOR_USERNAME
+        - Password Variable :: HARBOR_PASSWORD
+        - Credentials :: Specific credentials
+            - admin/******(Harbor Registry Login)
+
+![Jenkins Environment 설정. HARBOR_USERNAME과 HARBOR_PASSWORD 변수에 Harbor Registry Login 자격증명을 바인딩했고 비밀번호는 별표로 마스킹되어 있다](/images/jenkins-job-backend-harbor-push/03.png)
+
+
+### Build Steps
+
+Add Build step > Copy artifacts from another project
+
+- Project name :: luna-backend-build
+- Which build :: Latest successful build
+- Artifacts to copy :: build/libs/*.jar, Dockerfile
+- Target directory :: .
+- Flatten directories :: check
+- Fingerprint Artifacts :: check
+
+![Jenkins의 Copy artifacts from another project 설정. luna-backend-build의 최신 성공 빌드에서 build/libs/*.jar과 Dockerfile을 복사하도록 지정한 상태](/images/jenkins-job-backend-harbor-push/04.png)
+
+
+Add Build step > Execute shell
+
+```bash
+#!/bin/bash
+set -e
+
+echo "📁 JAR 확인"
+ls -l *.jar
+
+REGISTRY="HARBOR_HOST:5000"
+IMAGE_NAME="${REGISTRY}/devops-project/luna-backend:1.0.0"
+
+echo "🔐 Docker 로그인"
+echo "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USERNAME" --password-stdin
+
+echo "🐳 Docker 이미지 빌드 시작"
+docker build -t $IMAGE_NAME .
+
+echo "✅ Docker 이미지 빌드 완료: $IMAGE_NAME"
+```
+
+### 빌드 후 조치
+
+빌드 후 조치 추가 > Build other projects
+
+- Projects to build :: `${next_project_name}`
+- Trigger only if build is stable :: check
+
+![Jenkins 빌드 후 조치에서 Build other projects로 luna-backend-image-push Job을 연결하고 빌드가 안정적일 때만 트리거하도록 설정한 화면](/images/jenkins-job-backend-harbor-push/05.png)
+
+
+---
+
+## Image-push Job 생성
+
+Dashboard > `새로운 Item` 클릭
+
+- Enter an item name :: `${project_name}`
+- FreeStyle project
+- `OK` 클릭
+
+## Image-push Job 설정
+
+### General
+
+- GitLab Connection :: gitlab
+
+### 소스 코드 관리
+
+- None :: check
+
+### Build Steps
+
+Add Build step > Execute shell
+
+```bash
+#!/bin/bash
+set -e
+
+REGISTRY="HARBOR_HOST:5000"
+
+IMAGE_NAME="${REGISTRY}/devops-project/luna-backend:1.0.0"
+
+echo "☁️ Docker 이미지 푸시"
+docker push $IMAGE_NAME
+
+echo "✅ Docker 이미지 푸시 완료"
+```

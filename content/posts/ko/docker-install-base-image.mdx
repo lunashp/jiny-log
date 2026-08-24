@@ -1,0 +1,132 @@
+---
+title: "Docker 설치와 베이스 이미지 만들기 — JDK 21 / Node 20 공통 이미지"
+description: "Ubuntu에 Docker Engine과 Compose를 설치하고, 여러 서비스의 Dockerfile이 공통으로 재사용할 베이스 이미지를 만드는 과정을 정리한다. 베이스 이미지를 따로 두는 이유와 실제 빌드 결과 크기까지 다룬다."
+summary: "공통 런타임(JDK 21, Node 20+Nginx)을 베이스 이미지로 한 번 만들어 두면 서비스별 Dockerfile이 중복 설치 레이어를 반복하지 않는다. 빌드 결과는 backend-base:jdk21이 466MB, frontend-base:node20이 1.11GB였다. Compose는 apt로 들어오는 docker-compose-plugin과 standalone 바이너리 설치 방식이 따로 있다."
+date: "2025-04-15"
+draft: false
+tags: ["docker", "docker-compose", "dockerfile", "ubuntu", "devops"]
+category: "note"
+series: "devops-pipeline"
+---
+
+## Docker 설치
+
+> https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
+>
+
+### Docker `apt`저장소를 설정
+
+```bash
+# Add Docker's official GPG key:
+sudo apt update
+sudo apt install ca-certificates curl -y
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+```
+
+### Docker 패키지 설치
+
+```bash
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose -y
+```
+
+### 이미지를 실행하여 설치가 성공적으로 완료되었는지 확인
+
+```bash
+sudo docker run hello-world
+```
+
+### 버전 확인
+
+```bash
+sudo docker --version
+Docker version 28.0.4, build b8034c0
+```
+
+### Docker compose 설치
+
+> https://docs.docker.com/compose/install/standalone/
+>
+
+```bash
+sudo curl -SL https://github.com/docker/compose/releases/download/v2.34.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+```
+
+```bash
+sudo chmod +x /usr/local/bin/docker-compose
+```
+
+```bash
+docker compose version
+Docker Compose version v2.34.0
+```
+
+---
+
+## Docker base image 생성
+
+> https://hub.docker.com/search?badges=official
+>
+- Docker 베이스 이미지란?
+    - 공통 환경(예: JDK 21, Node.js 20 등)을 기반으로 여러 서비스의 Dockerfile에서 재사용할 수 있는 **기초 이미지**
+    - 목적: 중복 방지, 이미지 빌드 속도 개선, 표준화된 환경 제공
+
+### FE, BE 베이스 이미지 파일 생성
+
+`frontend-base.Dockerfile` (Node 20 + Nginx)
+
+```bash
+# Node.js 20 이미지 사용
+FROM node:20 AS base
+
+# nginx 설치를 위해 alpine 이미지 사용
+RUN apt-get update && apt-get install -y nginx \
+    && rm -rf /var/lib/apt/lists/*
+
+# nginx 기본 설정 파일 제거
+RUN rm /etc/nginx/sites-enabled/default
+
+# 앱 디렉토리 생성
+WORKDIR /app
+```
+
+`backend-base.Dockerfile` (JDK 21 + 기본 설정)
+
+```bash
+FROM openjdk:21-jdk-slim
+
+WORKDIR /app
+
+# apt 패키지 관리자 사용하여 필수 패키지 설치
+RUN apt-get update && apt-get install -y curl unzip && apt-get clean
+
+ENTRYPOINT ["java", "-version"]
+```
+
+### 베이스 이미지 빌드
+
+```bash
+# 프론트 베이스 이미지
+sudo docker build -t frontend-base:node20 -f frontend-base.Dockerfile .
+
+# 백엔드 베이스 이미지
+sudo docker build -t backend-base:jdk21 -f backend-base.Dockerfile .
+```
+
+### 베이스 이미지 확인
+
+```bash
+sudo docker images                                               
+REPOSITORY      TAG       IMAGE ID       CREATED          SIZE                                                       
+backend-base    jdk21     e44414a70410   6 seconds ago    466MB
+frontend-base   node20    62f46877f86a   22 minutes ago   1.11GB
+hello-world     latest    74cc54e27dc4   2 months ago     10.1kB
+```

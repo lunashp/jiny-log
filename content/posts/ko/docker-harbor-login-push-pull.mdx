@@ -1,0 +1,142 @@
+---
+title: "docker login에서 'server gave HTTP response to HTTPS client'가 날 때"
+description: "HTTP로 띄운 Harbor에 docker login을 하면 Docker가 HTTPS로 접속을 시도해 실패한다. daemon.json의 insecure-registries에 레지스트리를 등록해 해결하는 방법과, 이미지 태그·push·pull 경로 규칙을 정리한다."
+summary: "Docker 클라이언트는 레지스트리에 기본적으로 HTTPS로 붙는다. Harbor를 HTTP(포트 5000)로 띄웠다면 /etc/docker/daemon.json의 insecure-registries에 해당 호스트:포트를 넣고 dockerd를 재시작해야 로그인이 된다. push할 이미지는 HOST:PORT/PROJECT/IMAGE:TAG 형식으로 태그해야 하며, 이 경로가 Harbor의 프로젝트 구조와 1:1로 맞아야 한다."
+date: "2025-04-15"
+draft: false
+tags: ["docker", "harbor", "registry", "devops", "troubleshooting"]
+category: "troubleshooting"
+series: "devops-pipeline"
+---
+
+## **Docker에서 Harbor에 로그인**
+
+```bash
+docker login <HARBOR_HOST>:<PORT>
+```
+
+## **Harbor에 설정한 계정의 ID/PW 입력**
+
+ http: server gave HTTP response to HTTPS client
+
+## 로그인 시 아래와 같은 에러가 난다면
+
+```bash
+Error response from daemon: Get "https://VM_HOST:5000/v2/": http: server gave HTTP response to HTTPS client
+ubuntu@luna-vm:~/luna-workspace/harbor$ docker login VM_HOST:5000
+Username: admin
+
+i Info → A Personal Access Token (PAT) can be used instead.
+         To create a PAT, visit https://app.docker.com/settings
+         
+         
+Password: 
+Error response from daemon: Get "https://VM_HOST:5000/v2/": http: server gave HTTP response to HTTPS client
+```
+
+## **`/etc/docker/daemon.json` 수정**
+
+```bash
+sudo vim /etc/docker/daemon.json
+```
+
+아래 내용을 추가 (또는 수정)
+
+```json
+{
+  "insecure-registries": ["VM_HOST:5000"]
+}
+```
+
+## **Docker 데몬 재시작**
+
+```bash
+sudo systemctl restart docker
+```
+
+## **다시 로그인 시도**
+
+```bash
+sudo docker login VM_HOST:5000
+```
+
+```bash
+WARNING! Your credentials are stored unencrypted in '/home/ubuntu/.docker/config.json'.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/go/credential-store/
+
+Login Succeeded
+```
+
+
+---
+
+## **image Push / Pull**
+
+### image push
+
+> Harbor는 특정 경로를 따라 이미지를 저장함
+>
+
+#### **Docker 이미지에 태그 설정**
+
+```bash
+<HARBOR_HOST>:<PORT>/<PROJECT_NAME>/<IMAGE_NAME>:<TAG>
+
+sudo docker tag backend-base:jdk21 VM_HOST:5000/devops-project/backend-base:jdk21
+
+sudo docker tag frontend-base:node20 VM_HOST:5000/devops-project/frontend-base:node20
+```
+
+- Harbor 주소: `VM_HOST:5000`
+- 프로젝트 이름: `devops-project`
+- Docker 이미지 이름: `backend-base`, `frontend-base`
+- 태그: `jdk21`, `node20`
+
+#### **Docker 이미지 Push**
+
+```bash
+sudo docker push VM_HOST:5000/devops-project/backend-base:jdk21
+
+sudo docker push VM_HOST:5000/devops-project/frontend-base:node20
+```
+
+**성공하면 Harbor UI에서 확인 가능**
+
+#### **image Pull test**
+
+```bash
+<HARBOR_HOST>:<PORT>/<PROJECT_NAME>/<IMAGE_NAME>:<TAG>
+
+sudo docker pull VM_HOST:5000/devops-project/backend-base:jdk21
+```
+
+#### success log
+
+```bash
+sudo docker pull VM_HOST:5000/devops-project/backend-base:jdk21
+jdk21: Pulling from luna-devops-project/backend-base
+Digest: sha256:607e8c98e47bc43c9944402fb0744de74709cc9dee5aa75574bc9010a8ea56a2
+Status: Image is up to date for HARBOR_HOST:5001/luna-devops-project/backend-base:jdk21
+HARBOR_HOST:5001/luna-devops-project/backend-base:jdk21
+
+ubuntu@luna-vm:~/luna-workspace/harbor$ docker images
+REPOSITORY                                            TAG       IMAGE ID       CREATED        SIZE
+HARBOR_HOST:5001/luna-devops-project/backend-base    jdk21     e44414a70410   3 hours ago    466MB
+backend-base                                          jdk21     e44414a70410   3 hours ago    466MB
+HARBOR_HOST:5001/luna-devops-project/frontend-base   node20    62f46877f86a   4 hours ago    1.11GB
+frontend-base                                         node20    62f46877f86a   4 hours ago    1.11GB
+hello-world                                           latest    74cc54e27dc4   2 months ago   10.1kB
+goharbor/harbor-exporter                              v2.12.2   37fbe3aa524d   2 months ago   125MB
+goharbor/redis-photon                                 v2.12.2   3ccb66d5d7e7   2 months ago   166MB
+goharbor/trivy-adapter-photon                         v2.12.2   f3b0ec4861d3   2 months ago   345MB
+goharbor/harbor-registryctl                           v2.12.2   1f39cb9883a3   2 months ago   160MB
+goharbor/registry-photon                              v2.12.2   1542a6e4ebf9   2 months ago   85.6MB
+goharbor/nginx-photon                                 v2.12.2   b6b2ea786b90   2 months ago   154MB
+goharbor/harbor-log                                   v2.12.2   65a8ac29d6d7   2 months ago   163MB
+goharbor/harbor-jobservice                            v2.12.2   ddf9a3d4d975   2 months ago   171MB
+goharbor/harbor-core                                  v2.12.2   883312e8c1f3   2 months ago   194MB
+goharbor/harbor-portal                                v2.12.2   7f2791de5783   2 months ago   162MB
+goharbor/harbor-db                                    v2.12.2   a4f39039baed   2 months ago   272MB
+goharbor/prepare                                      v2.12.2   617f50c1808f   2 months ago   208MB
+```

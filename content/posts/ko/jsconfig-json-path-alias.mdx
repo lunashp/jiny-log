@@ -1,0 +1,45 @@
+---
+title: "jsconfig.json의 checkJs와 JSON 주석이 만든 세 가지 문제"
+description: "VS Code의 자동 import가 안 되던 문제를 checkJs 옵션으로 해결했지만, 같은 옵션이 js 파일에 타입 검사를 걸어 새 문제를 만들었다. 그리고 그 옵션을 JSON에서 주석 처리한 것이 yarn start를 죽였다. 세 문제의 연결 관계를 정리한다."
+summary: "jsconfig.json에 checkJs를 켜면 VS Code의 Quick Fix에 자동 import 항목이 생기지만, 동시에 순수 js 파일에도 타입 검사가 걸려 없는 에러가 뜬다. 그래서 옵션을 지워야 하는데 // 로 주석 처리하면 안 된다 — jsconfig.json은 엄격한 JSON이라 react-scripts가 파싱하다 Expected double-quoted property name in JSON 으로 죽는다. 지울 옵션은 주석이 아니라 삭제해야 한다."
+date: "2024-08-12"
+draft: false
+tags: ["jsconfig", "vscode", "javascript", "react", "json", "troubleshooting"]
+category: "troubleshooting"
+---
+
+## 1. vscode에서 자동 import
+1.1. `command` + `.` 단축어 실행 시 자동 import가 안됨
+![VS Code에서 useState에 빨간 밑줄이 그려진 상태로 Quick Fix 메뉴를 열었으나 no-undef 규칙 비활성화와 Move to file 항목만 있고 import 추가 항목이 없는 화면](/images/jsconfig-json-path-alias/01.png)
+
+1.2. jsconfig.json 에서 `"checkJs" : "true"` 설정 추가
+![jsconfig.json 파일 내용. compilerOptions에 module CommonJS, target ES6, jsx react-jsx, checkJs true 가 설정되어 있다](/images/jsconfig-json-path-alias/02.png)
+
+1.3. Quick Fix 목록에 import 가능하게끔 추가 됨
+![checkJs를 켠 뒤 같은 위치에서 Quick Fix를 열었을 때 Update import from "react" 와 Add import from "react" 항목이 나타난 화면](/images/jsconfig-json-path-alias/03.png)
+
+
+## 2. js 파일임에도 타입 검사를 하라고 나옴
+2.1. 해당 문제
+![js 파일인데도 event.target.focus 에 Property 'focus' does not exist on type 'string'. ts(2339) 타입 에러가 표시된 VS Code 화면](/images/jsconfig-json-path-alias/04.png)
+
+2.2. 해결 방안은 `"checkJs" : "true"` 옵션을 삭제해야 됨
+
+## 3. yarn start 명령어 실행 시 node: internal/modules/cjs/loader:1456 Throw err
+3.1. 해당 문제
+![yarn start 실행이 실패한 터미널 출력. SyntaxError: jsconfig.json: Expected double-quoted property name in JSON at position 100 과 react-scripts의 스택 트레이스가 보인다](/images/jsconfig-json-path-alias/05.png)
+
+3.2.
+```json
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ES6",
+    "jsx": "react-jsx",
+    "baseUrl": "src"
+    // "chekcJs": "true"
+  },
+  "include": ["src"]
+}
+```
+ json 파일에 주석처리 해놔서 ... 바보 ...

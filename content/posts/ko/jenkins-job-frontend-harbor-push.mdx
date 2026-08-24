@@ -1,0 +1,205 @@
+---
+title: "Jenkins Job 3개로 프런트엔드 이미지를 빌드해 Harbor에 push하기"
+description: "NodeJS 툴 설정부터 pnpm 빌드, Docker 이미지 빌드, Harbor push까지 프런트엔드 파이프라인을 세 개의 FreeStyle Job으로 나눠 구성한 과정을 정리한다. 백엔드 구성과 다른 지점은 NodeJS 설치와 dist 산출물 전달이다."
+summary: "Jenkins 관리 > Tools에서 NodeJS를 먼저 등록하고, Job의 Environment에서 Provide Node & npm bin/ folder to PATH를 켜야 셸 스텝에서 npx pnpm이 잡힌다. 산출물은 dist/**와 Dockerfile을 아카이브해 다음 Job으로 넘긴다. 나머지 흐름(build → image → image-push)은 백엔드와 같다."
+date: "2025-04-15"
+draft: false
+tags: ["jenkins", "harbor", "docker", "nodejs", "pnpm", "devops", "ci"]
+category: "note"
+series: "devops-pipeline"
+---
+
+## Tools에 Node.js 추가
+
+Dashboard > Jenkins 관리 >  Tools
+
+- Name: `node20.10`
+- Install automatically :: check
+- Version: `Node.JS 20.10.0`
+
+![Jenkins 관리의 Tools 화면. NodeJS 항목에 node20.10이라는 이름으로 NodeJS 20.10.0 자동 설치를 지정한 상태](/images/jenkins-job-frontend-harbor-push/01.png)
+
+
+---
+
+## Build Job 생성
+
+Dashboard > `새로운 Item` 클릭
+
+- Enter an item name :: `${project_name}`
+- FreeStyle project
+- `OK` 클릭
+
+## Build Job 설정
+
+### General
+
+- GitLab Connection :: gitlab
+
+### 소스 코드 관리
+
+- Git
+    - Repositories
+        - Repository URL :: `${gitlab_url}`
+        - Credentials :: `${gitlab-user-token}`
+    - Branches to build
+        - Branch Specifier :: */main
+
+![Jenkins luna-frontend-build Job의 소스 코드 관리 설정. Repository URL 값은 블러 처리되어 있고 Credentials는 gitlab-user-token, 빌드 브랜치는 */main이다](/images/jenkins-job-frontend-harbor-push/02.png)
+
+
+### Environment
+
+- Provide Node & npm bin/ folder to PATH :: check
+    - NodeJS Installation :: node20.10
+    - npmrc file :: - use system default -
+    - Cache location :: Default (~/.npm or %APP_DATA%\npm-cache)
+
+![Jenkins Environment 설정에서 Provide Node & npm bin/ folder to PATH를 켜고 NodeJS Installation을 node20.10으로 지정한 화면](/images/jenkins-job-frontend-harbor-push/03.png)
+
+
+### Build Steps
+
+Add Build step > Execute shell
+
+```bash
+#!/bin/bash
+set -e
+
+echo "📁 의존성 설치"
+npx pnpm install
+
+echo "🛠️ 프론트엔드 빌드 시작"
+npx pnpm build
+
+echo "✅ 빌드 완료: dist/ 디렉토리"
+ls -l dist
+```
+
+### 빌드 후 조치
+
+빌드 후 조치 추가 > Archive the artifacts
+
+- Files to archive :: dist/**, Dockerfile
+
+빌드 후 조치 추가 > Build other projects
+
+- Projects to build :: `${next_project_name}`
+- Trigger only if build is stable :: check
+
+![Jenkins 빌드 후 조치 설정. dist/**와 Dockerfile을 아카이브하고 Build other projects로 luna-frontend-image Job을 연결한 상태](/images/jenkins-job-frontend-harbor-push/04.png)
+
+
+---
+
+## Image Job 생성
+
+Dashboard > `새로운 Item` 클릭
+
+- Enter an item name :: `${project_name}`
+- FreeStyle project
+- `OK` 클릭
+
+## Image Job 설정
+
+### General
+
+- GitLab Connection :: gitlab
+
+### 소스 코드 관리
+
+- None :: check
+
+### Environment
+
+- Use secret text(s) or file(s) :: check
+    - **Username and password (separated)**
+        - Username Variable :: HARBOR_USERNAME
+        - Password Variable :: HARBOR_PASSWORD
+        - Credentials :: Specific credentials
+            - admin/******(Harbor Registry Login)
+
+![Jenkins Environment 설정. HARBOR_USERNAME과 HARBOR_PASSWORD 변수에 Harbor Registry Login 자격증명을 바인딩했고 비밀번호는 별표로 마스킹되어 있다](/images/jenkins-job-frontend-harbor-push/05.png)
+
+
+### Build Steps
+
+Add Build step > Copy artifacts from another project
+
+- Project name :: luna-frontend-build
+- Which build :: Latest successful build
+- Artifacts to copy :: dist/**, Dockerfile
+- Fingerprint Artifacts :: check
+
+![Jenkins의 Copy artifacts from another project 설정. luna-frontend-build의 최신 성공 빌드에서 dist/**와 Dockerfile을 복사하도록 지정한 상태](/images/jenkins-job-frontend-harbor-push/06.png)
+
+
+Add Build step > Execute shell
+
+```bash
+#!/bin/bash
+set -e
+
+REGISTRY="HARBOR_HOST:5000"
+
+IMAGE_NAME="${REGISTRY}/devops-project/luna-frontend:1.0.0"
+
+echo "📂 빌드 산출물 확인"
+ls -l dist
+ls -l Dockerfile
+
+echo "🔐 Docker 로그인"
+echo "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USERNAME" --password-stdin
+
+echo "🐳 Docker 이미지 빌드 시작"
+docker build -t $IMAGE_NAME .
+
+echo "✅ Docker 이미지 빌드 완료: $IMAGE_NAME"
+```
+
+### 빌드 후 조치
+
+빌드 후 조치 추가 > Build other projects
+
+- Projects to build :: `${next_project_name}`
+- Trigger only if build is stable :: check
+
+![Jenkins 빌드 후 조치에서 Build other projects로 luna-frontend-image-push Job을 연결하고 빌드가 안정적일 때만 트리거하도록 설정한 화면](/images/jenkins-job-frontend-harbor-push/07.png)
+
+
+---
+
+## Image-push Job 생성
+
+Dashboard > `새로운 Item` 클릭
+
+- Enter an item name :: `${project_name}`
+- FreeStyle project
+- `OK` 클릭
+
+## Image-push Job 설정
+
+### General
+
+- GitLab Connection :: gitlab
+
+### 소스 코드 관리
+
+- None :: check
+
+### Build Steps
+
+Add Build step > Execute shell
+
+```bash
+#!/bin/bash
+set -e
+
+REGISTRY="HARBOR_HOST:5000"
+IMAGE_NAME="${REGISTRY}/devops-project/luna-frontend:1.0.0"
+
+echo "☁️ Docker 이미지 푸시"
+docker push $IMAGE_NAME
+
+echo "✅ Docker 이미지 푸시 완료"
+```

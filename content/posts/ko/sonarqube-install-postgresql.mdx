@@ -1,0 +1,174 @@
+---
+title: "SonarQube 설치하기 — PostgreSQL 15 연동과 vm.max_map_count 설정"
+description: "Ubuntu에 PostgreSQL 15와 SonarQube Community 버전을 설치하고 연결하는 과정을 정리한다. DB·사용자 생성부터 sonar.properties의 JDBC 설정, 그리고 SonarQube가 요구하는 vm.max_map_count 커널 파라미터까지 다룬다."
+summary: "SonarQube는 Elasticsearch를 내장하므로 vm.max_map_count를 262144로 올리지 않으면 기동에 실패한다. DB는 sonarqube 데이터베이스와 sonar 사용자를 만들고 public 스키마의 소유권까지 넘겨야 한다. 접속 포트는 sonar.web.port로 바꿀 수 있고, 기본 관리자 계정은 admin/admin이므로 첫 로그인 직후 반드시 변경한다."
+date: "2025-04-15"
+draft: false
+tags: ["sonarqube", "postgresql", "ubuntu", "devops"]
+category: "note"
+series: "devops-pipeline"
+---
+
+## PostgreSQL 설치
+
+> https://www.postgresql.org/download/linux/ubuntu/
+>
+
+> https://www.postgresql.org/docs/release/15.12/
+>
+
+```bash
+# Import the repository signing key:
+sudo apt install curl ca-certificates
+sudo install -d /usr/share/postgresql-common/pgdg
+sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+
+# Create the repository configuration file:
+sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+# Update the package lists:
+sudo apt update
+```
+
+### PostgreSQL 15 설치
+
+```bash
+sudo apt install postgresql-15 -y
+```
+
+### 버전 확인
+
+```bash
+psql --version
+psql (PostgreSQL) 15.12 (Ubuntu 15.12-1.pgdg22.04+1)
+```
+
+### 서비스 시작 및 자동 부팅 설정
+
+```bash
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+```
+
+### SonarQube용 DB와 사용자 생성
+
+```bash
+sudo -u postgres psql
+
+-- 아래 SQL 입력
+CREATE DATABASE sonarqube;
+CREATE USER sonar WITH ENCRYPTED PASSWORD 'REDACTED';
+GRANT ALL PRIVILEGES ON DATABASE sonarqube TO sonar;
+
+ALTER SCHEMA public OWNER TO sonar;
+GRANT ALL ON SCHEMA public TO sonar;
+
+\q  # 종료
+```
+
+### conf 파일 수정
+
+`postgresql.conf`
+
+```bash
+sudo vim /etc/postgresql/15/main/postgresql.conf 
+
+#------------------------------------------------------------------------------
+# CONNECTIONS AND AUTHENTICATION
+#------------------------------------------------------------------------------
+
+# - Connection Settings -
+
+listen_addresses = '*'          # what IP address(es) to listen on;
+```
+
+`pg_hba.conf`
+
+```bash
+sudo vim /etc/postgresql/15/main/pg_hba.conf
+
+local   replication     all                                     peer
+host    replication     all             127.0.0.1/32            scram-sha-256
+host    replication     all             ::1/128                 scram-sha-256
+
+# 아래 내용추가 
+host    all             all             0.0.0.0/0               md5
+```
+
+---
+
+## SonarQube 설치
+
+> https://www.sonarsource.com/open-source-editions/sonarqube-community-edition/
+>
+
+https://community.sonarsource.com/t/sonarqube-lts-is-now-sonarqube-lta/113837
+
+https://community.sonarsource.com/t/will-the-lta-release-for-sonarqube-10-community-build-be-dropped-formerly-community-edition/130646
+
+### 커뮤니티 버전 설치
+
+```bash
+cd ~/luna-workspace
+wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-25.3.0.104237.zip
+unzip sonarqube-25.3.0.104237.zip
+mv sonarqube-25.3.0.104237 sonarqube
+```
+
+### db connection 수정
+
+```bash
+vim ~/luna_workspace/sonarqube/conf/sonar.properties
+
+# User credentials.
+# Permissions to create tables, indices and triggers must be granted to JDBC user.
+# The schema must be created first.
+sonar.jdbc.username=sonar
+sonar.jdbc.password=REDACTED
+sonar.jdbc.url=jdbc:postgresql://localhost:5432/sonarqube
+
+sonar.web.host=0.0.0.0
+
+# 포트 수정
+sonar.web.port=9002
+```
+
+### vm.max_map_count 설정
+
+```bash
+echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
+```
+
+설정 적용
+
+```bash
+sudo sysctl -p
+```
+
+### 방화벽 설정
+
+```bash
+sudo ufw allow 9002/tcp
+sudo ufw status
+```
+
+- id: admin
+- pw: admin
+    - REDACTED
+
+---
+
+### SonarQube 재시작
+
+`${sonarqube_설치폴더}/bin/linux-x86-64/`
+
+```bash
+# 먼저 중지
+./sonar.sh stop
+
+# 다시 시작
+./sonar.sh start
+
+# 상태 확인
+./sonar.sh status
+```

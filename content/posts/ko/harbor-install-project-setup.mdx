@@ -1,0 +1,112 @@
+---
+title: "Harbor 설치와 프로젝트 생성 — offline installer로 컨테이너 레지스트리 띄우기"
+description: "Harbor offline installer로 사설 컨테이너 레지스트리를 구성하는 과정을 정리한다. harbor.yml의 hostname·port·admin 비밀번호 설정, install.sh 실행, 그리고 기동된 9개 컨테이너 확인과 프로젝트 생성까지 다룬다."
+summary: "Harbor는 단일 컨테이너가 아니라 core·db·portal·registry·jobservice·redis·log·nginx·registryctl 아홉 개 컨테이너로 뜬다. install.sh 전에 harbor.yml의 hostname을 실제 접속 주소로 바꿔야 하며, hostname을 localhost로 두면 외부에서 push가 안 된다. HTTPS를 쓰지 않을 거라면 https 블록을 주석 처리해야 설치가 진행된다."
+date: "2025-04-15"
+draft: false
+tags: ["harbor", "docker", "registry", "devops", "ubuntu"]
+category: "note"
+series: "devops-pipeline"
+---
+
+> https://github.com/goharbor/harbor/releases
+>
+
+## **Harbor 설치 파일 다운로드**
+
+```bash
+LUNA_WORK="/home/ubuntu/luna_workspace"
+echo ${LUNA_WORK}
+mkdir -p ${LUNA_WORK}
+
+HARBOR_VERSION="v2.12.2"
+wget -P ${LUNA_WORK} https://github.com/goharbor/harbor/releases/download/${HARBOR_VERSION}/harbor-offline-installer-${HARBOR_VERSION}.tgz
+```
+
+## 압축 해제
+
+```bash
+ls -al ${LUNA_WORK}/harbor-offline-installer-${HARBOR_VERSION}.tgz
+tar -xvzf ${LUNA_WORK}/harbor-offline-installer-${HARBOR_VERSION}.tgz -C ${LUNA_WORK}
+```
+
+## 설정 파일 생성
+
+```bash
+cp ${LUNA_WORK}/harbor/harbor.yml.tmpl ${LUNA_WORK}/harbor/harbor.yml
+
+cp harbor/harbor.yml.tmpl harbor/harbor.yml
+```
+
+## **`harbor.yml` 설정 파일 수정**
+
+```bash
+cp ${LUNA_WORK}/harbor/harbor.yml.tmpl ${LUNA_WORK}/harbor/harbor.yml
+
+cp harbor/harbor.yml.tmpl harbor/harbor.yml
+```
+
+```bash
+vim ${LUNA_WORK}/harbor/harbor.yml
+```
+
+```yaml
+vi ${LUNA_WORK}/harbor/harbor.yml
+`
+hostname: <VM_IP>
+http:
+  port: 5000
+# https:
+#   port: 443
+#   certificate: /path/to/cert
+#   private_key: /path/to/key
+harbor_admin_password: REDACTED
+database:
+  password: REDACTED
+`
+```
+
+> `<VM_IP>` 부분을 실제 VM의 IP로 변경 (curl ifconfig.me)
+>
+
+## **Harbor 컨테이너 실행**
+
+```bash
+sudo ${LUNA_WORK}/harbor/install.sh
+```
+
+## **Harbor 컨테이너 실행** 확인
+
+```bash
+sudo docker ps -a
+CONTAINER ID   IMAGE                                 COMMAND                  CREATED          STATUS                             PORTS                                         NAMES
+b088510a2025   goharbor/harbor-jobservice:v2.12.2    "/harbor/entrypoint.…"   22 seconds ago   Up 15 seconds (health: starting)                                                 harbor-jobservice
+3a77f8eb3487   goharbor/nginx-photon:v2.12.2         "nginx -g 'daemon of…"   22 seconds ago   Up 20 seconds (health: starting)   0.0.0.0:5000->8080/tcp, [::]:5000->8080/tcp   nginx
+3e0ea05f300d   goharbor/harbor-core:v2.12.2          "/harbor/entrypoint.…"   22 seconds ago   Up 20 seconds (health: starting)                                                 harbor-core
+61bdb4670e89   goharbor/harbor-db:v2.12.2            "/docker-entrypoint.…"   22 seconds ago   Up 21 seconds (health: starting)                                                 harbor-db
+43c060c2dc8d   goharbor/harbor-portal:v2.12.2        "nginx -g 'daemon of…"   22 seconds ago   Up 21 seconds (health: starting)                                                 harbor-portal
+65d3215e476a   goharbor/registry-photon:v2.12.2      "/home/harbor/entryp…"   22 seconds ago   Up 21 seconds (health: starting)                                                 registry
+a334b017a862   goharbor/harbor-registryctl:v2.12.2   "/home/harbor/start.…"   22 seconds ago   Up 21 seconds (health: starting)                                                 registryctl
+daf80484b857   goharbor/redis-photon:v2.12.2         "redis-server /etc/r…"   22 seconds ago   Up 21 seconds (health: starting)                                                 redis
+41f27ce59720   goharbor/harbor-log:v2.12.2           "/bin/sh -c /usr/loc…"   22 seconds ago   Up 21 seconds (health: starting)   127.0.0.1:1514->10514/tcp                     harbor-log
+a839f9a743d5   hello-world                           "/hello"                 8 minutes ago    Exited (0) 8 minutes ago                                                         dazzling_mahavira
+```
+
+---
+
+## Harbor 프로젝트 생성
+
+### **웹 UI 접속**
+
+브라우저에서 **`http://<VM_IP>:5000`** 접속
+
+로그인 정보:
+- **ID:** admin
+- **PW:** REDACTED (설정한 비밀번호)
+
+
+### **프로젝트 생성**
+
+- `새 프로젝트` 클릭
+- 프로젝트 이름 :: `luna-devops-project`
+![Harbor 웹 UI의 프로젝트 목록 화면. library 프로젝트 하나가 공개로 생성되어 있고 저장소 수는 0으로 표시된다](/images/harbor-install-project-setup/01.png)

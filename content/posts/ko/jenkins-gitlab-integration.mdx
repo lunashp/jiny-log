@@ -1,0 +1,44 @@
+---
+title: "Jenkins에 GitLab 연동 설정하기 — API token과 저장소 인증 자격증명 두 개가 필요하다"
+description: "Jenkins와 GitLab을 붙일 때 필요한 자격증명은 하나가 아니라 둘이다. GitLab 연결용 API token과 Job이 저장소를 clone할 때 쓰는 Username with password를 각각 등록해야 하는 이유와 등록 위치를 정리한다."
+summary: "GitLab에서 api·read_user·read_repository scope로 personal access token을 발급한 뒤, Jenkins에 두 번 등록한다. 하나는 Jenkins 관리 > System의 GitLab 섹션에 GitLab API token 종류로(연결 확인용), 다른 하나는 Credentials > Global credentials에 Username with password 종류로(Job의 git clone 인증용) 넣는다. 이 둘을 하나로 착각하면 Job에서 저장소 인증이 실패한다."
+date: "2025-04-15"
+draft: false
+tags: ["jenkins", "gitlab", "devops", "ci", "credentials"]
+category: "note"
+series: "devops-pipeline"
+---
+
+## GitLab Personal Access Token 발급
+
+- GitLab > User Settings > **Access Tokens**
+- Token name: `jenkins-token`
+- Expiration date
+- Select scopes
+    - api
+    - read_user
+    - read_repository
+
+![GitLab의 Personal access tokens 생성 폼. Token name은 jenkins-token이고 scope로 api, read_user, read_repository를 선택한 상태](/images/jenkins-gitlab-integration/01.png)
+
+
+## Jenkins에 GitLab Credentials 추가
+
+- Jenkins > **Jenkins 관리 > System**
+- Kind
+- Secret: `${GitLab Token}`
+- ID: GitLabToken
+
+![Jenkins 관리 > System의 GitLab 섹션에서 Add Credentials 모달을 열어 Kind를 GitLab API token으로, ID를 gitLabToken으로 지정한 화면. 토큰 값은 마스킹되고 모달 뒤 host URL은 블러 처리되어 있다](/images/jenkins-gitlab-integration/02.png)
+
+
+## Jenkins에 GitLab Credentials 추가
+
+> 추후 Jenkins job 생성 시 git repo 인증에 사용
+>
+- Jenkins > **Jenkins 관리 > Credentials > System > Global credentials**
+- Kind: Username with password
+- Secret: `${GitLab Token}`
+- ID: gitlab-user-token
+
+![Jenkins Global credentials의 New credentials 폼. Kind는 Username with password, ID는 gitlab-user-token이고 비밀번호는 마스킹되어 있다](/images/jenkins-gitlab-integration/03.png)
