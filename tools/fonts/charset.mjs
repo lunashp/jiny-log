@@ -13,6 +13,9 @@ import { LATIN_EXTRA } from "./sources.mjs";
 
 const SCAN = [
   { dir: "content/posts", ext: [".mdx", ".md"] },
+  // 케이스 스터디도 같은 폰트로 조판된다. 여기서 빠지면 케이스 본문의
+  // 한글이 폴백 폰트로 렌더돼 문장 중간에 서체가 섞인다.
+  { dir: "content/work", ext: [".mdx", ".md"] },
   { dir: "messages", ext: [".json"] },
   // UI 문자열이 컴포넌트에 하드코딩된 경우까지 포괄한다.
   { dir: "src", ext: [".astro", ".ts"] },
