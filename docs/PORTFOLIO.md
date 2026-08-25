@@ -80,8 +80,8 @@ GEO의 실질은 문체와 구조이며, 이 규칙이 이미 그것을 정의�
 ### jiny-log 자신은 케이스로 만들지 않는다
 
 블로그를 소개하는 케이스를 그 블로그 안에 두면 자기참조가 과하다.
-**Next.js 16 에서 Astro 로 갈아엎은 판단**은 `/about` 의 "이 사이트에 대하여" 로 짧게 서술한다.
-경위는 [`ARCHITECTURE.md`](./ARCHITECTURE.md) §1 에 이미 있으므로 거기로 링크한다.
+**Next.js 16 에서 Astro 로 갈아엎은 판단**은 사이트 표면에 서술하지 않는다.
+경위는 [`ARCHITECTURE.md`](./ARCHITECTURE.md) §1 에 남긴다.
 
 ## 5. 정보 구조
 
@@ -89,7 +89,7 @@ GEO의 실질은 문체와 구조이며, 이 규칙이 이미 그것을 정의�
 /{locale}                 홈 — 한 문장 소개 + 케이스 5건 + 최근 글        ← 개편
 /{locale}/work            케이스 목록                                    ← 신규
 /{locale}/work/{slug}     케이스 상세                                    ← 신규
-/{locale}/about           소개 · 이력 요약 · 이 사이트에 대하여            ← 신규
+/{locale}/about           소개 · 이력 요약 · 그 외 업무                   ← 신규
 /{locale}/posts …         글 (기존 그대로)
 /{locale}/tags/{tag}      (기존 그대로)
 ```

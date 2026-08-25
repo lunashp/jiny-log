@@ -37,7 +37,6 @@ export interface AboutContent {
   paragraphs: string[];
   career: CareerRow[];
   otherWork: OtherWork[];
-  site: string[];
 }
 
 const ko: AboutContent = {
@@ -100,10 +99,6 @@ const ko: AboutContent = {
       summary:
         "저장소마다 코딩 에이전트 작업 환경을 구성했습니다. 역할별 서브에이전트와 훅·스킬을 정의하고, 규칙을 '읽고 판단하는 문서'가 아니라 '실행하면 답이 나오는 검사 명령' 형태로 저장소당 7~13개 배치했습니다.",
     },
-  ],
-  site: [
-    "이 블로그는 Astro 7 로 만들었습니다. 처음에는 Next.js 16 App Router 로 구현했는데, 클라이언트 컴포넌트를 전부 제거해도 JS 138KB 가 남는 것을 실측하고 옮겼습니다. 현재 글 본문 라우트의 JS 는 2.2KB 입니다.",
-    "번들 예산은 CI 하드 게이트입니다. 초과하면 빌드가 실패하고, 예산을 올려서 통과시키지 않습니다. 접근성·시각 회귀도 같은 방식으로 묶여 있습니다.",
   ],
 };
 
@@ -171,10 +166,6 @@ const en: AboutContent = {
       summary:
         "Configured coding-agent workspaces per repository — role-specific subagents, hooks, and skills. Rules are written as runnable check commands rather than prose to be interpreted, 7 to 13 per repository.",
     },
-  ],
-  site: [
-    "This blog runs on Astro 7. It started as Next.js 16 App Router, but even after removing every client component 138KB of JavaScript remained, so I moved it. The article route now ships 2.2KB.",
-    "The bundle budget is a hard CI gate. Exceeding it fails the build, and the budget is not raised to make it pass. Accessibility and visual regression are wired the same way.",
   ],
 };
 
