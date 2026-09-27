@@ -3,7 +3,7 @@ title: "PostgreSQL에서 OFFSET이 음수면 'must not be negative'로 쿼리가
 description: "페이지 번호를 0이나 음수로 받으면 (page-1)*size 계산이 음수 OFFSET을 만들어 PostgreSQL이 쿼리를 거부하고 목록 API가 500을 반환한다. 원인과, 페이지 번호를 서버에서 유효 범위로 보정하는 해결을 정리한다."
 summary: "OFFSET에 음수가 들어가면 PostgreSQL은 `ERROR: OFFSET must not be negative`로 쿼리를 거부한다. 페이지네이션에서 offset을 `(page-1)*pageSize`로 만들 때 page가 0이나 음수면 offset이 음수가 되는 것이 원인이다. 클라이언트 입력을 믿지 말고 서버에서 page를 [1, maxPage]로 clamp한 뒤 offset을 계산하고, 보정된 page를 응답에 실어 준다."
 date: "2026-09-27"
-draft: true
+draft: false
 tags: ["postgresql", "pagination", "spring-boot", "jpa", "sql"]
 category: "troubleshooting"
 ---
@@ -70,9 +70,9 @@ const offset = (safePage - 1) * pageSize;
 
 | 방어 위치 | 잘못된 page 차단 | 한계 |
 | --- | --- | --- |
-| 프론트 입력 UI | ⭕ | 직접 호출·북마크·크롤러는 못 막는다 |
-| 서버 clamp | ⭕ | 없음 — 유일하게 확실한 지점 |
-| DB(그대로 전달) | ❌ | 음수 OFFSET → 500 |
+| 프론트 입력 UI | 일부 | 직접 호출·북마크·크롤러는 못 막는다 |
+| 서버 clamp | 차단 | 없음 — 유일하게 확실한 지점 |
+| DB(그대로 전달) | 못 막음 | 음수 OFFSET → 500 |
 
 ## 왜 이 해결이 맞는가
 
