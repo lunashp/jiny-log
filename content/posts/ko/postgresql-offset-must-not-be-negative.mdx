@@ -54,7 +54,7 @@ const safePage = Math.min(Math.max(page, 1), maxPage);
 const offset = (safePage - 1) * pageSize;
 ```
 
-보정한 `page` 는 **응답에도 실어 준다.** 그래야 프론트 페이저가 요청값이 아니라 실제로 조회된 페이지를 강조한다.
+보정한 `page` 는 응답에도 실어 준다. 그래야 프론트 페이저가 요청값이 아니라 실제로 조회된 페이지를 강조한다.
 
 ```jsonc
 // 응답
